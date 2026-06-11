@@ -79,22 +79,37 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // Diagnostic warnings
+      if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY === 'AIzaSyDummyKeyForBuildTimePrerenderingOnly') {
+        console.warn("⚠️ Firebase Phone Auth Warning: running with dummy API Key. Verify NEXT_PUBLIC_FIREBASE_API_KEY is configured in your production Vercel project environment variables.");
+      }
+
+      console.log(`[Auth Diagnostics] Initiating OTP send process for E.164 phone: +91${rawPhone}`);
       const verifier = setupRecaptcha();
       const e164Phone = `+91${rawPhone}`;
 
       const result = await signInWithPhoneNumber(auth, e164Phone, verifier);
+      console.log("[Auth Diagnostics] OTP sent successfully. confirmationResult instance acquired.");
       setConfirmationResult(result);
       setStep("otp");
     } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
+      console.error("[Auth Diagnostics] Firebase signInWithPhoneNumber failed:", err);
+      const firebaseError = err as { code?: string; message?: string };
       let message = "Failed to send OTP. Please try again.";
 
       if (firebaseError.code === "auth/invalid-phone-number") {
-        message = "Invalid phone number format.";
+        message = "Invalid phone number format. Please check the digits.";
       } else if (firebaseError.code === "auth/too-many-requests") {
-        message = "Too many requests. Please wait a few minutes.";
+        message = "Too many requests. Please wait a few minutes before trying again.";
       } else if (firebaseError.code === "auth/quota-exceeded") {
-        message = "SMS quota exceeded. Please try later.";
+        message = "SMS quota exceeded. Firebase SMS daily limit hit. Please try later.";
+      } else if (firebaseError.code === "auth/unauthorized-domain") {
+        message = "Unauthorized Domain: Please verify that 'food-at-door.vercel.app' is added to Firebase Authentication > Settings > Authorized Domains.";
+        console.error("❌ Critical: Domain 'food-at-door.vercel.app' is not authorized in Firebase Console.");
+      } else if (firebaseError.code === "auth/invalid-api-key") {
+        message = "Invalid API Key configuration. Check your Vercel NEXT_PUBLIC_FIREBASE_API_KEY env variable.";
+      } else if (firebaseError.message) {
+        message = `Auth Error (${firebaseError.code || 'UNKNOWN'}): ${firebaseError.message}`;
       }
 
       setError(message);
