@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -17,33 +17,79 @@ import {
   ClipboardList, 
   User as UserIcon
 } from "lucide-react";
+import { auth, getUser, updateUser, onAuthChange, signOut } from "@/lib/firebase";
 import styles from "./profile.module.css";
 
 export default function ProfilePage() {
   const router = useRouter();
   
-  // Profile state details (simulating client-side updates)
+  const [uid, setUid] = useState<string | null>(null);
   const [profile, setProfile] = useState({
-    name: "Aravind Chowdary",
-    phone: "+91 98765 43210",
-    email: "aravind.chowdary@gmail.com",
-    avatar: "🧑‍💻"
+    name: "Loading...",
+    phone: "",
+    email: "",
+    avatar: "🧑‍💻",
+    photoURL: ""
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(profile.name);
-  const [editPhone, setEditPhone] = useState(profile.phone);
-  const [editEmail, setEditEmail] = useState(profile.email);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
-  const handleSaveProfile = () => {
-    setProfile({
-      ...profile,
-      name: editName,
-      phone: editPhone,
-      email: editEmail
+  // Listen to Auth State changes
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        setUid(firebaseUser.uid);
+        // Fetch custom user details from Firestore
+        const userDetails = await getUser(firebaseUser.uid);
+        if (userDetails) {
+          setProfile({
+            name: userDetails.name || "",
+            phone: userDetails.phone || firebaseUser.phoneNumber || "",
+            email: userDetails.email || firebaseUser.email || "",
+            avatar: "🧑‍💻",
+            photoURL: userDetails.photoURL || firebaseUser.photoURL || ""
+          });
+        } else {
+          // Fallback to Auth properties
+          setProfile({
+            name: firebaseUser.displayName || "Customer",
+            phone: firebaseUser.phoneNumber || "",
+            email: firebaseUser.email || "",
+            avatar: "🧑‍💻",
+            photoURL: firebaseUser.photoURL || ""
+          });
+        }
+      } else {
+        // Not authenticated -> redirect to login
+        router.push("/auth/login");
+      }
     });
-    setIsEditing(false);
-    alert("✅ Profile updated successfully!");
+
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleSaveProfile = async () => {
+    if (!uid) return;
+    try {
+      await updateUser(uid, {
+        name: editName,
+        phone: editPhone,
+        email: editEmail
+      });
+      setProfile(prev => ({
+        ...prev,
+        name: editName,
+        phone: editPhone,
+        email: editEmail
+      }));
+      setIsEditing(false);
+      alert("✅ Profile updated successfully!");
+    } catch (err) {
+      alert("❌ Failed to save profile details.");
+    }
   };
 
   const handleEditClick = () => {
@@ -53,9 +99,14 @@ export default function ProfilePage() {
     setIsEditing(true);
   };
 
-  const handleLogout = () => {
-    alert("👋 Logged out successfully!");
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      alert("👋 Logged out successfully!");
+      router.push("/");
+    } catch {
+      router.push("/");
+    }
   };
 
   return (
@@ -76,7 +127,11 @@ export default function ProfilePage() {
         {/* User Card Section */}
         <section className={styles.userSection}>
           <div className={styles.avatarWrapper}>
-            <span>{profile.avatar}</span>
+            {profile.photoURL ? (
+              <img src={profile.photoURL} alt={profile.name} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+            ) : (
+              <span>{profile.avatar}</span>
+            )}
             <div className={styles.editAvatarBadge} onClick={() => alert("📸 Avatar photo upload modal!")}>
               <Camera size={14} />
             </div>

@@ -1,7 +1,10 @@
 {
-  "/(customer)/cart/page": "app/(customer)/cart/page.js",
-  "/(customer)/profile/page": "app/(customer)/profile/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/(customer)/page": "app/(customer)/page.js",
-  "/(customer)/profile/addresses/page": "app/(customer)/profile/addresses/page.js",
-  "/(customer)/orders/page": "app/(customer)/orders/page.js"
+  "/(customer)/orders/[id]/page": "app/(customer)/orders/[id]/page.js",
+  "/(customer)/settings/page": "app/(customer)/settings/page.js",
+  "/(customer)/payments/page": "app/(customer)/payments/page.js",
+  "/(customer)/notifications/page": "app/(customer)/notifications/page.js",
+  "/(customer)/coupons/page": "app/(customer)/coupons/page.js",
+  "/(customer)/wallet/page": "app/(customer)/wallet/page.js"
 }
