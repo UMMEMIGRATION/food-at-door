@@ -1,0 +1,180 @@
+{
+  "indexes": [
+
+    // -----------------------------------------------------------------------
+    // orders — by customer, newest first
+    // -----------------------------------------------------------------------
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "customerId",            "order": "ASCENDING" },
+        { "fieldPath": "timestamps.placedAt",   "order": "DESCENDING" }
+      ]
+    },
+
+    // orders — by restaurant + status (restaurant dashboard live view)
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "restaurantId", "order": "ASCENDING" },
+        { "fieldPath": "status",       "order": "ASCENDING" },
+        { "fieldPath": "timestamps.placedAt", "order": "DESCENDING" }
+      ]
+    },
+
+    // orders — by driver (driver app active order)
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "driverId",            "order": "ASCENDING" },
+        { "fieldPath": "status",              "order": "ASCENDING" },
+        { "fieldPath": "timestamps.placedAt", "order": "DESCENDING" }
+      ]
+    },
+
+    // orders — admin overview (all orders sorted by date)
+    {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status",              "order": "ASCENDING" },
+        { "fieldPath": "timestamps.placedAt", "order": "DESCENDING" }
+      ]
+    },
+
+    // -----------------------------------------------------------------------
+    // menu_items — by restaurant, available only, sorted by category + order
+    // -----------------------------------------------------------------------
+    {
+      "collectionGroup": "menu_items",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "restaurantId", "order": "ASCENDING" },
+        { "fieldPath": "isAvailable",  "order": "ASCENDING" },
+        { "fieldPath": "category",     "order": "ASCENDING" },
+        { "fieldPath": "sortOrder",    "order": "ASCENDING" }
+      ]
+    },
+
+    // menu_items — by restaurant, category only (restaurant menu editor)
+    {
+      "collectionGroup": "menu_items",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "restaurantId", "order": "ASCENDING" },
+        { "fieldPath": "category",     "order": "ASCENDING" },
+        { "fieldPath": "sortOrder",    "order": "ASCENDING" }
+      ]
+    },
+
+    // -----------------------------------------------------------------------
+    // restaurants — approved + city (homepage listing)
+    // -----------------------------------------------------------------------
+    {
+      "collectionGroup": "restaurants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status",  "order": "ASCENDING" },
+        { "fieldPath": "isOpen",  "order": "ASCENDING" },
+        { "fieldPath": "rating",  "order": "DESCENDING" }
+      ]
+    },
+
+    // restaurants — by cuisine (filter)
+    {
+      "collectionGroup": "restaurants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cuisine", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "rating",  "order": "DESCENDING" }
+      ]
+    },
+
+    // -----------------------------------------------------------------------
+    // reviews — by restaurant, newest first
+    // -----------------------------------------------------------------------
+    {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "restaurantId", "order": "ASCENDING" },
+        { "fieldPath": "isVisible",    "order": "ASCENDING" },
+        { "fieldPath": "createdAt",    "order": "DESCENDING" }
+      ]
+    },
+
+    // reviews — by customer (order history reviews)
+    {
+      "collectionGroup": "reviews",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "customerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",  "order": "DESCENDING" }
+      ]
+    },
+
+    // -----------------------------------------------------------------------
+    // payouts — by recipient + period
+    // -----------------------------------------------------------------------
+    {
+      "collectionGroup": "payouts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recipientId",  "order": "ASCENDING" },
+        { "fieldPath": "periodStart",  "order": "DESCENDING" }
+      ]
+    },
+
+    // payouts — admin view by status
+    {
+      "collectionGroup": "payouts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status",      "order": "ASCENDING" },
+        { "fieldPath": "periodStart", "order": "DESCENDING" }
+      ]
+    },
+
+    // -----------------------------------------------------------------------
+    // drivers — available drivers (for order assignment)
+    // -----------------------------------------------------------------------
+    {
+      "collectionGroup": "drivers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isAvailable", "order": "ASCENDING" },
+        { "fieldPath": "status",      "order": "ASCENDING" }
+      ]
+    }
+
+  ],
+
+  "fieldOverrides": [
+
+    // Disable default indexes on large text fields to save index quota
+    {
+      "collectionGroup": "orders",
+      "fieldPath": "specialInstructions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "restaurants",
+      "fieldPath": "description",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "menu_items",
+      "fieldPath": "description",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "reviews",
+      "fieldPath": "restaurantComment",
+      "indexes": []
+    }
+
+  ]
+}

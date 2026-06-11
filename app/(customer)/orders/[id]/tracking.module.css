@@ -1,0 +1,593 @@
+/* ============================================================
+   Food At Door — Order Tracking Screen Styles
+   Design: Premium dark UI, active timeline glows, orange accent
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.scrollBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 48px 20px 100px;
+  scroll-behavior: smooth;
+}
+
+.scrollBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px 16px;
+  background: linear-gradient(180deg, #0a0a0a 80%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.backBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9CA3AF;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+/* ── Card Blocks ──────────────────────────────────────────── */
+
+.card {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Live Status Headline ─────────────────────────────────── */
+
+.statusHeadline {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: #fff;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusPulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #FF6B35;
+  box-shadow: 0 0 10px #FF6B35;
+  animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.3); opacity: 0.4; }
+}
+
+.etaRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.etaLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.etaValue {
+  font-size: 24px;
+  font-weight: 900;
+  color: #FF8C55;
+  letter-spacing: -0.5px;
+}
+
+/* Simulator controls */
+.simulatorBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(255, 107, 53, 0.05);
+  border: 1.5px solid rgba(255, 107, 53, 0.25);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.simLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #FF8C55;
+  text-transform: uppercase;
+}
+
+.simBtn {
+  background: #FF6B35;
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.simBtn:hover {
+  background: #FF8C55;
+}
+
+/* ── Stepper Timeline ─────────────────────────────────────── */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 8px;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+  position: relative;
+  padding-bottom: 24px;
+}
+
+.step:last-child {
+  padding-bottom: 0;
+}
+
+/* Connector Line */
+.step::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  z-index: 1;
+}
+
+.step:last-child::before {
+  display: none;
+}
+
+/* Completed Connector Line */
+.stepCompleted::before {
+  background: #FF6B35;
+}
+
+/* Icon / Indicator */
+.stepIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #141414;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  flex-shrink: 0;
+  color: #6B7280;
+  transition: all 0.3s;
+}
+
+.stepIconCompleted {
+  background: #FF6B35;
+  border-color: #FF6B35;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 107, 53, 0.25);
+}
+
+.stepIconActive {
+  background: #141414;
+  border-color: #FF8C55;
+  color: #FF8C55;
+  box-shadow: 0 0 15px rgba(255, 107, 53, 0.4);
+  animation: breatheGlow 2s infinite alternate;
+}
+
+@keyframes breatheGlow {
+  from { border-color: rgba(255, 107, 53, 0.5); }
+  to   { border-color: rgba(255, 107, 53, 1); }
+}
+
+.stepContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stepTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6B7280;
+  transition: color 0.3s;
+}
+
+.stepTitleActive {
+  color: #fff;
+}
+
+.stepTitleCompleted {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stepDesc {
+  font-size: 11px;
+  color: #4B5563;
+  margin-top: 1px;
+}
+
+.stepDescActive {
+  color: #9CA3AF;
+}
+
+/* ── Driver Profile ───────────────────────────────────────── */
+
+.driverHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.driverAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  box-shadow: 0 4px 10px rgba(255, 107, 53, 0.2);
+}
+
+.driverDetails {
+  flex: 1;
+}
+
+.driverLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #FF8C55;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.driverName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.driverPhone {
+  font-size: 11px;
+  color: #6B7280;
+}
+
+/* ── Order Summary Receipt ────────────────────────────────── */
+
+.summaryHeader {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #9CA3AF;
+  margin-bottom: 6px;
+}
+
+.summaryRow:last-child {
+  margin-bottom: 0;
+}
+
+.summaryQty {
+  color: #FF8C55;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.summaryPrice {
+  color: #fff;
+}
+
+.summaryTotalRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 8px;
+  margin-top: 6px;
+}
+
+.summaryTotalValue {
+  color: #FF8C55;
+}
+
+/* ── Action Buttons ────────────────────────────────────────── */
+
+.btnGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.rowButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.primaryBtn {
+  flex: 1;
+  padding: 14px;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.3);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.primaryBtn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(255, 107, 53, 0.4);
+}
+
+.secondaryBtn {
+  flex: 1;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #9CA3AF;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.homeBtn {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  color: #6B7280;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.homeBtn:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #9CA3AF;
+}
+
+/* ── Map Placeholder Styles ────────────────────────────────── */
+
+.mapCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mapGrid {
+  height: 200px;
+  background: #0d0d0d;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.gridLineHorizontal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.gridLineVertical {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.mapRouteSvg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.mapRoutePath {
+  animation: routeDrip 4s linear infinite;
+}
+
+@keyframes routeDrip {
+  to { stroke-dashoffset: -20; }
+}
+
+.mapPinIcon {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -50%);
+}
+
+.pinRestaurant {
+  border-color: #FF8C55;
+  box-shadow: 0 0 12px rgba(255, 140, 85, 0.3);
+}
+
+.pinRider {
+  border-color: #FF6B35;
+  box-shadow: 0 0 12px rgba(255, 107, 53, 0.4);
+  animation: riderBounce 1s ease-in-out infinite alternate;
+}
+
+@keyframes riderBounce {
+  from { transform: translate(-50%, -50%) translateY(0); }
+  to { transform: translate(-50%, -50%) translateY(-4px); }
+}
+
+.pinUser {
+  border-color: #10B981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+.pinLabelText {
+  position: absolute;
+  bottom: -18px;
+  white-space: nowrap;
+  font-size: 8px;
+  font-weight: 700;
+  color: #9CA3AF;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1px 4px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mapFooter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.mapStatusFooter {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cancelBtn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 12px;
+  color: #EF4444;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.cancelBtn:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+

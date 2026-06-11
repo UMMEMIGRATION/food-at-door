@@ -1,0 +1,422 @@
+/* ============================================================
+   Food At Door — Customer Cart Screen Styles
+   Design: Premium dark glassmorphism, warm orange accents
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.scrollBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 110px; /* space for checkout footer */
+  scroll-behavior: smooth;
+}
+
+.scrollBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 48px 20px 16px;
+  background: linear-gradient(180deg, #0a0a0a 80%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9CA3AF;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.clearAllBtn {
+  background: none;
+  border: none;
+  color: #FF6B35;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.clearAllBtn:hover {
+  background: rgba(255, 107, 53, 0.08);
+}
+
+/* ── Cart Items List ──────────────────────────────────────── */
+
+.cartList {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.cartCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  animation: itemEntrance 0.3s ease both;
+}
+
+@keyframes itemEntrance {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.imageWrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.emoji {
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.itemName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemPrice {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FF8C55;
+}
+
+.itemRestaurant {
+  font-size: 11px;
+  color: #6B7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Actions block: Qty controls + delete button */
+.actionsBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qtyControl {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 4px 8px;
+  gap: 8px;
+}
+
+.qtyBtn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  color: #9CA3AF;
+  transition: color 0.15s;
+}
+
+.qtyBtn:hover {
+  color: #FF8C55;
+}
+
+.qtyValue {
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 14px;
+  text-align: center;
+  color: #fff;
+}
+
+.removeBtn {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: #FCA5A5;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.removeBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+  transform: scale(1.05);
+}
+
+/* ── Bill Summary ─────────────────────────────────────────── */
+
+.billContainer {
+  margin: 16px 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.billTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+  letter-spacing: -0.1px;
+}
+
+.paymentRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #9CA3AF;
+  font-weight: 400;
+}
+
+.paymentValue {
+  color: #fff;
+  font-weight: 500;
+}
+
+.freeValue {
+  color: #10B981;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 4px 0;
+}
+
+.grandTotalRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+.grandTotalValue {
+  color: #FF8C55;
+  font-size: 17px;
+}
+
+/* ── Empty Cart State ─────────────────────────────────────── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+  animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+
+.emptyHeading {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.emptyText {
+  font-size: 13px;
+  color: #6B7280;
+  max-width: 250px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.shopBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  padding: 12px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+  transition: all 0.2s;
+}
+
+.shopBtn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+}
+
+/* ── Sticky Checkout Bar ──────────────────────────────────── */
+
+.checkoutBtnContainer {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 390px;
+  z-index: 100;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.checkoutBtn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border: none;
+  border-radius: 16px;
+  padding: 16px 24px;
+  box-shadow: 0 12px 30px rgba(255, 107, 53, 0.35);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checkoutBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(255, 107, 53, 0.45);
+}
+
+.checkoutBtn:active {
+  transform: translateY(0);
+}
+
+.checkoutInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.checkoutLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.checkoutPrice {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.checkoutAction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, 30px); opacity: 0; }
+  to   { transform: translate(-50%, 0); opacity: 1; }
+}

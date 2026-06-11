@@ -1,0 +1,407 @@
+/* ============================================================
+   Food At Door — Restaurant Details Screen Styles
+   Design: Premium dark UI, glassmorphic layout, orange accents
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.scrollBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 110px; /* Space for sticky cart */
+  scroll-behavior: smooth;
+}
+
+.scrollBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Banner & Overlays ────────────────────────────────────── */
+
+.bannerContainer {
+  position: relative;
+  height: 200px;
+  width: 100%;
+  background: linear-gradient(135deg, #1f130b 0%, #0a0a0a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.bannerOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 10, 10, 1) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+  z-index: 2;
+}
+
+.bannerEmoji {
+  font-size: 80px;
+  z-index: 1;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+  animation: floatEmoji 4s ease-in-out infinite;
+}
+
+@keyframes floatEmoji {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-8px) rotate(3deg); }
+}
+
+.backBtn {
+  position: absolute;
+  top: 48px;
+  left: 20px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+/* ── Restaurant Details Block ─────────────────────────────── */
+
+.detailsBlock {
+  padding: 16px 20px 24px;
+  position: relative;
+  z-index: 3;
+}
+
+.restaurantName {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.ratingBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 171, 64, 0.09);
+  border: 1px solid rgba(255, 171, 64, 0.18);
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFAB40;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+.metaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #374151;
+}
+
+.description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6B7280;
+  font-weight: 400;
+}
+
+/* ── Menu Categories Selector ──────────────────────────────── */
+
+.categoriesSection {
+  background: #0a0a0a;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.categoriesScroll {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.categoriesScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.categoryTab {
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  font-weight: 500;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.categoryTab:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.categoryTabActive {
+  background: rgba(255, 107, 53, 0.1);
+  border-color: rgba(255, 107, 53, 0.4);
+  color: #FF8C55;
+  font-weight: 600;
+}
+
+/* ── Menu Sections / Items ────────────────────────────────── */
+
+.menuSection {
+  padding-top: 24px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  padding: 0 20px 14px;
+  letter-spacing: -0.2px;
+}
+
+.itemCard {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.2s;
+}
+
+.itemCard:hover {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.1px;
+}
+
+.itemPrice {
+  font-size: 14px;
+  font-weight: 700;
+  color: #FF8C55;
+}
+
+.itemDescription {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6B7280;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.itemImageOuter {
+  width: 96px;
+  height: 96px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.itemImageWrap {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.itemEmoji {
+  font-size: 40px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
+}
+
+/* ── Add To Cart Button Overlays ────────────────────────────── */
+
+.addBtnContainer {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.addBtn {
+  background: #141414;
+  border: 1px solid rgba(255, 107, 53, 0.4);
+  color: #FF8C55;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.addBtn:hover {
+  background: #1e1e1e;
+  border-color: rgba(255, 107, 53, 0.6);
+  color: #fff;
+  transform: translate(-50%, -1px) scale(1.03);
+}
+
+.qtySelector {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);
+  gap: 10px;
+}
+
+.qtyBtn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 800;
+  width: 14px;
+  height: 14px;
+}
+
+.qtyValue {
+  min-width: 14px;
+  text-align: center;
+}
+
+/* ── Sticky Cart Summary at Bottom ─────────────────────────── */
+
+.stickyCart {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 390px;
+  z-index: 100;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cartContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 12px 30px rgba(255, 107, 53, 0.4);
+}
+
+.cartInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cartItems {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cartPrice {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.viewCartBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.viewCartBtn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, 30px); opacity: 0; }
+  to   { transform: translate(-50%, 0); opacity: 1; }
+}

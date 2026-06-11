@@ -1,0 +1,259 @@
+/* ============================================================
+   Food At Door — Settings Screen Styles
+   Design: Premium dark UI, toggles, layouts, buttons, etc.
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.scrollBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 48px 20px 100px;
+  scroll-behavior: smooth;
+}
+
+.scrollBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px 16px;
+  background: linear-gradient(180deg, #0a0a0a 80%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.backBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9CA3AF;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+/* Section Label */
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #FF8C55;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 16px 0 8px;
+}
+
+/* Settings Group Container */
+.group {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* Row elements */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.desc {
+  font-size: 11px;
+  color: #6B7280;
+  margin-top: 1px;
+}
+
+/* Interactive Toggles */
+.switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.switchActive {
+  background-color: #FF6B35;
+}
+
+.switchThumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #fff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s;
+}
+
+.switchThumbActive {
+  transform: translateX(20px);
+}
+
+/* Select element */
+.selectField {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Help link */
+.helpLink {
+  background: none;
+  border: none;
+  color: #FF8C55;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Logout */
+.logoutBtn {
+  width: 100%;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 20px;
+  color: #EF4444;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  margin-top: 16px;
+}
+
+.logoutBtn:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* Bottom Navigation */
+.bottomNav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 76px;
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px;
+  z-index: 100;
+}
+
+.navItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #4B5563;
+  cursor: pointer;
+  flex: 1;
+  height: 100%;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.navItemActive {
+  color: #FF8C55;
+}
+
+.navIconWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.navActiveIndicator {
+  position: absolute;
+  top: -8px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #FF6B35;
+  box-shadow: 0 0 8px #FF6B35;
+}
+
+.navLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}

@@ -1,0 +1,224 @@
+/* ============================================================
+   Food At Door — Coupon Screen Styles
+   Design: Premium dark UI, dashed coupon borders, gradients, etc.
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.scrollBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 48px 20px 100px;
+  scroll-behavior: smooth;
+}
+
+.scrollBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px 16px;
+  background: linear-gradient(180deg, #0a0a0a 80%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.backBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9CA3AF;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+/* Coupon Input Section */
+.inputSection {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.inputField {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0 14px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  font-weight: 600;
+}
+
+.inputField:focus {
+  border-color: #FF6B35;
+}
+
+.applyBtn {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.removeBtn {
+  padding: 12px 20px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 12px;
+  color: #EF4444;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Active Applied Promo Banner */
+.appliedBanner {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1.5px dashed rgba(16, 185, 129, 0.35);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.appliedText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.appliedTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #10B981;
+}
+
+.appliedDesc {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+/* Section Header */
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 14px;
+  letter-spacing: -0.2px;
+}
+
+/* Coupon Cards */
+.couponList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.couponCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 16px;
+  position: relative;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.couponCard:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 107, 53, 0.4);
+}
+
+.couponLeft {
+  flex: 1;
+}
+
+.promoBadge {
+  background: rgba(255, 107, 53, 0.1);
+  color: #FF8C55;
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 8px;
+  font-family: monospace;
+}
+
+.couponTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.couponDesc {
+  font-size: 11px;
+  color: #6B7280;
+  line-height: 1.4;
+}
+
+.actionLink {
+  background: none;
+  border: none;
+  color: #FF8C55;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.actionLink:hover {
+  color: #FF6B35;
+}

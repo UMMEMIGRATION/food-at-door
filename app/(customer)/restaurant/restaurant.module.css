@@ -1,0 +1,359 @@
+/* ============================================================
+   Food At Door — Restaurant Listing Screen Styles
+   Design: Premium dark UI, warm orange accents, glassmorphic filters
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.scrollBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 30px;
+  scroll-behavior: smooth;
+}
+
+.scrollBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px 16px;
+  background: linear-gradient(180deg, #0a0a0a 80%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.backBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9CA3AF;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+/* ── Search & Filter Controls ─────────────────────────────── */
+
+.searchContainer {
+  padding: 0 20px 16px;
+}
+
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  transition: all 0.2s;
+}
+
+.searchField:focus-within {
+  border-color: rgba(255, 107, 53, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.06);
+}
+
+.searchIcon {
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.searchInput::placeholder {
+  color: #4B5563;
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: #4B5563;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.clearBtn:hover {
+  color: #9CA3AF;
+}
+
+/* ── Horizontal Scrollable Subsections ────────────────────── */
+
+.filterSection {
+  margin-bottom: 20px;
+}
+
+.filterHeading {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4B5563;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 20px 8px;
+}
+
+.horizontalScroll {
+  display: flex;
+  gap: 8px;
+  padding: 2px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.horizontalScroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cuisine & Sorting chips */
+.chip {
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 12px;
+  font-weight: 500;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.chipActive {
+  background: rgba(255, 107, 53, 0.1);
+  border-color: rgba(255, 107, 53, 0.4);
+  color: #FF8C55;
+  font-weight: 600;
+}
+
+/* ── Results Bar ──────────────────────────────────────────── */
+
+.resultsCountRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px 14px;
+}
+
+.resultsCount {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B7280;
+}
+
+/* ── Restaurant Cards Listing ─────────────────────────────── */
+
+.listContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.restaurantCard {
+  display: flex;
+  gap: 14px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  animation: cardEntrance 0.35s ease both;
+}
+
+.restaurantCard:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.imageWrap {
+  width: 84px;
+  height: 84px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.emoji {
+  font-size: 34px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.infoBlock {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.nameRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.restaurantName {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ratingBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 171, 64, 0.09);
+  border: 1px solid rgba(255, 171, 64, 0.18);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFAB40;
+  flex-shrink: 0;
+}
+
+.cuisines {
+  font-size: 12px;
+  color: #6B7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  color: #4B5563;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #9CA3AF;
+}
+
+.metaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #374151;
+}
+
+.promoBadge {
+  align-self: flex-start;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #FF8C55;
+  background: rgba(255, 107, 53, 0.07);
+  border: 1px solid rgba(255, 107, 53, 0.15);
+  border-radius: 5px;
+  padding: 1px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Empty State ──────────────────────────────────────────── */
+
+.emptyState {
+  padding: 60px 20px;
+  text-align: center;
+  color: #6B7280;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyText {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.resetLink {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: #FF6B35;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}

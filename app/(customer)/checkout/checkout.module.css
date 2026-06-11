@@ -1,0 +1,401 @@
+/* ============================================================
+   Food At Door — Customer Checkout Screen Styles
+   Design: Premium dark glassmorphism, warm orange accents
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.scrollBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 110px; /* space for sticky checkout footer */
+  scroll-behavior: smooth;
+}
+
+.scrollBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px 16px;
+  background: linear-gradient(180deg, #0a0a0a 80%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.backBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9CA3AF;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+/* ── Sections ─────────────────────────────────────────────── */
+
+.section {
+  margin: 16px 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+  letter-spacing: -0.1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Addresses ────────────────────────────────────────────── */
+
+.addressList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.addressCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.addressCard:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.addressCardActive {
+  background: rgba(255, 107, 53, 0.04);
+  border-color: rgba(255, 107, 53, 0.5);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.08);
+}
+
+.radioInput {
+  margin-top: 3px;
+  accent-color: #FF6B35;
+  cursor: pointer;
+}
+
+.addressDetails {
+  flex: 1;
+}
+
+.addressTag {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.addressText {
+  font-size: 11px;
+  color: #6B7280;
+  line-height: 1.4;
+}
+
+/* Add Address Buttons & Form */
+.addAddressBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px dashed rgba(255, 107, 53, 0.4);
+  color: #FF8C55;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addAddressBtn:hover {
+  background: rgba(255, 107, 53, 0.05);
+  border-color: rgba(255, 107, 53, 0.6);
+  color: #fff;
+}
+
+.addAddressForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.inputField {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.inputField:focus {
+  border-color: rgba(255, 107, 53, 0.5);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+}
+
+.btnSubmit {
+  flex: 1;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.btnCancel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #9CA3AF;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+/* ── Payment Methods ──────────────────────────────────────── */
+
+.paymentList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.paymentOption {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  transition: all 0.15s;
+}
+
+.paymentOptionActive {
+  background: rgba(255, 107, 53, 0.02);
+  border-color: rgba(255, 107, 53, 0.4);
+}
+
+.paymentHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.paymentTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  flex: 1;
+}
+
+.paymentDetails {
+  padding: 0 14px 14px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 200px; }
+}
+
+.cardRow {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Order Summary ────────────────────────────────────────── */
+
+.paymentRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #9CA3AF;
+  font-weight: 400;
+}
+
+.paymentValue {
+  color: #fff;
+  font-weight: 500;
+}
+
+.freeValue {
+  color: #10B981;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 4px 0;
+}
+
+.grandTotalRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+.grandTotalValue {
+  color: #FF8C55;
+  font-size: 16px;
+}
+
+/* ── Sticky Order Bar ─────────────────────────────────────── */
+
+.checkoutBtnContainer {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 390px;
+  z-index: 100;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.checkoutBtn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border: none;
+  border-radius: 16px;
+  padding: 16px 24px;
+  box-shadow: 0 12px 30px rgba(255, 107, 53, 0.35);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checkoutBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(255, 107, 53, 0.45);
+}
+
+.checkoutBtn:active {
+  transform: translateY(0);
+}
+
+.checkoutInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.checkoutLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.checkoutPrice {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.checkoutAction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, 30px); opacity: 0; }
+  to   { transform: translate(-50%, 0); opacity: 1; }
+}

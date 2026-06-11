@@ -1,0 +1,272 @@
+/* ============================================================
+   Food At Door — Customer Order Confirmation Screen Styles
+   Design: Premium dark UI, success green and warm orange details
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.scrollBody {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 48px 20px 100px;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scrollBody::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Success Animation Card ──────────────────────────────── */
+
+.successCard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.checkmarkWrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+}
+
+.checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2.5px solid #10B981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #10B981;
+  font-size: 38px;
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.25);
+  animation: checkmarkPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pulseRing {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(16, 185, 129, 0.3);
+  animation: rotateRing 15s linear infinite;
+}
+
+@keyframes checkmarkPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes rotateRing {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.heading {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.subheading {
+  font-size: 13px;
+  color: #6B7280;
+  margin-bottom: 12px;
+}
+
+.orderId {
+  display: inline-block;
+  padding: 6px 14px;
+  background: rgba(255, 107, 53, 0.08);
+  border: 1px solid rgba(255, 107, 53, 0.25);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FF8C55;
+  font-family: monospace;
+}
+
+/* ── Info Sections ────────────────────────────────────────── */
+
+.infoSection {
+  width: 100%;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.iconBox {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FF6B35;
+  flex-shrink: 0;
+}
+
+.itemContent {
+  flex: 1;
+}
+
+.itemLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.itemValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.4;
+}
+
+.itemSubtext {
+  font-size: 11px;
+  color: #9CA3AF;
+  margin-top: 1px;
+}
+
+/* ── Order Summary Card ────────────────────────────────────── */
+
+.summaryTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+.summaryQty {
+  color: #FF8C55;
+  margin-right: 6px;
+  font-weight: 700;
+}
+
+.summaryPrice {
+  color: #fff;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 6px 0;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.totalValue {
+  color: #FF8C55;
+  font-size: 16px;
+}
+
+/* ── Buttons Group ────────────────────────────────────────── */
+
+.btnGroup {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.primaryBtn {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #FF6B35, #FF8C55);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.primaryBtn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+}
+
+.secondaryBtn {
+  width: 100%;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #9CA3AF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}

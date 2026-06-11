@@ -1,0 +1,40 @@
+{
+  "pages": {
+    "/(customer)/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(customer)/page.css",
+      "static/chunks/app/(customer)/page.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
+    ],
+    "/(customer)/cart/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(customer)/cart/page.css",
+      "static/chunks/app/(customer)/cart/page.js"
+    ],
+    "/(customer)/orders/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(customer)/orders/page.css",
+      "static/chunks/app/(customer)/orders/page.js"
+    ],
+    "/(customer)/profile/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(customer)/profile/page.css",
+      "static/chunks/app/(customer)/profile/page.js"
+    ],
+    "/(customer)/profile/addresses/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(customer)/profile/addresses/page.css",
+      "static/chunks/app/(customer)/profile/addresses/page.js"
+    ]
+  }
+}

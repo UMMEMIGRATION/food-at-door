@@ -1,0 +1,172 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -----------------------------------------------------------------------
+    // Helper functions
+    // -----------------------------------------------------------------------
+
+    /** Is the request from a signed-in user? */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** Is the requesting user the owner of this document? */
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    /** Does the requesting user have the 'admin' role? */
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    /** Does the requesting user have the 'restaurant_owner' role? */
+    function isRestaurantOwner(restaurantId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId == request.auth.uid;
+    }
+
+    /** Does the requesting user have the 'driver' role? */
+    function isDriver() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/drivers/$(request.auth.uid));
+    }
+
+    /** Prevent clients from writing sensitive computed fields */
+    function noSensitiveFieldsChanged() {
+      return !request.resource.data.keys().hasAny([
+        'commissionAmount', 'restaurantEarnings', 'paymentStatus'
+      ]);
+    }
+
+    // -----------------------------------------------------------------------
+    // users collection
+    // -----------------------------------------------------------------------
+    match /users/{userId} {
+      // Users can read and write their own document
+      allow read:   if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // restaurants collection
+    // -----------------------------------------------------------------------
+    match /restaurants/{restaurantId} {
+      // Anyone signed in can read approved restaurants
+      allow read: if isSignedIn() &&
+                     resource.data.status == 'approved' || isAdmin();
+
+      // Only admin can create / approve / suspend restaurants
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isRestaurantOwner(restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // menu_items collection
+    // -----------------------------------------------------------------------
+    match /menu_items/{itemId} {
+      // Any signed-in user can read available items
+      allow read: if isSignedIn();
+
+      // Only the owning restaurant or admin can write
+      allow create: if isAdmin() ||
+                       isRestaurantOwner(request.resource.data.restaurantId);
+      allow update: if isAdmin() ||
+                       isRestaurantOwner(resource.data.restaurantId);
+      allow delete: if isAdmin() ||
+                       isRestaurantOwner(resource.data.restaurantId);
+    }
+
+    // -----------------------------------------------------------------------
+    // orders collection
+    // -----------------------------------------------------------------------
+    match /orders/{orderId} {
+      // Customer who placed it, the assigned restaurant, the driver, or admin
+      allow read: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        isRestaurantOwner(resource.data.restaurantId) ||
+        resource.data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Only customers can place orders; financial fields are server-computed
+      allow create: if isSignedIn() &&
+                       request.resource.data.customerId == request.auth.uid &&
+                       noSensitiveFieldsChanged();
+
+      // Status updates allowed by restaurant, driver, or admin; not by customer alone
+      allow update: if isSignedIn() && (
+        isRestaurantOwner(resource.data.restaurantId) ||
+        resource.data.driverId == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow delete: if false; // Orders are never deleted
+    }
+
+    // -----------------------------------------------------------------------
+    // drivers collection
+    // -----------------------------------------------------------------------
+    match /drivers/{driverId} {
+      // Driver can read/update their own doc; admin has full access
+      allow read:   if isOwner(driverId) || isAdmin();
+      allow create: if isAdmin();
+      allow update: if isOwner(driverId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // reviews collection
+    // -----------------------------------------------------------------------
+    match /reviews/{reviewId} {
+      // Anyone signed in can read visible reviews
+      allow read: if isSignedIn() && resource.data.isVisible == true || isAdmin();
+
+      // Only the customer who placed the order can write a review
+      allow create: if isSignedIn() &&
+                       request.resource.data.customerId == request.auth.uid;
+
+      // Restaurant owner can add ownerReply; admin can toggle visibility
+      allow update: if isAdmin() ||
+                       isRestaurantOwner(resource.data.restaurantId);
+
+      allow delete: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // payouts collection
+    // -----------------------------------------------------------------------
+    match /payouts/{payoutId} {
+      // Restaurant owners and drivers can read their own payouts
+      allow read: if isSignedIn() && (
+        resource.data.recipientId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Only admin / Cloud Functions can create or update payouts
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // -----------------------------------------------------------------------
+    // coupons collection
+    // -----------------------------------------------------------------------
+    match /coupons/{couponId} {
+      // Any signed-in user can read active coupons
+      allow read: if isSignedIn() && resource.data.isActive == true || isAdmin();
+
+      // Only admin can manage coupons
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+  }
+}
