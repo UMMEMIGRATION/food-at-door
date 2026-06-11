@@ -4,7 +4,7 @@
   "/(customer)/orders/[id]/page": "app/(customer)/orders/[id]/page.js",
   "/(customer)/settings/page": "app/(customer)/settings/page.js",
   "/(customer)/payments/page": "app/(customer)/payments/page.js",
-  "/(customer)/notifications/page": "app/(customer)/notifications/page.js",
+  "/(customer)/wallet/page": "app/(customer)/wallet/page.js",
   "/(customer)/coupons/page": "app/(customer)/coupons/page.js",
-  "/(customer)/wallet/page": "app/(customer)/wallet/page.js"
+  "/(customer)/notifications/page": "app/(customer)/notifications/page.js"
 }

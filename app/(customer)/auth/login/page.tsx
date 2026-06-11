@@ -1,158 +1,62 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import type { ConfirmationResult } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import OtpVerification from "./OtpVerification";
+import { Chrome } from "lucide-react";
+import { auth, signInWithGoogle, getUser, createUser } from "@/lib/firebase";
 import styles from "./login.module.css";
-
-function isValidIndianPhone(phone: string): boolean {
-  return /^[6-9]\d{9}$/.test(phone);
-}
-
-function formatDisplay(raw: string): string {
-  const cleaned = raw.replace(/\D/g, "").slice(0, 10);
-  if (cleaned.length > 5) {
-    return `${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
-  }
-  return cleaned;
-}
-
-let recaptchaVerifier: RecaptchaVerifier | null = null;
-
-function setupRecaptcha(): RecaptchaVerifier {
-  if (recaptchaVerifier) {
-    recaptchaVerifier.clear();
-    recaptchaVerifier = null;
-  }
-
-  recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-    size: "invisible",
-    callback: () => {
-      // reCAPTCHA solved automatically
-    },
-    "expired-callback": () => {
-      recaptchaVerifier = null;
-    },
-  });
-
-  return recaptchaVerifier;
-}
 
 export default function LoginPage() {
   const router = useRouter();
-
-  const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [rawPhone, setRawPhone] = useState("");
-  const [displayPhone, setDisplayPhone] = useState("");
-  const [confirmationResult, setConfirmationResult] =
-    useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    return () => {
-      recaptchaVerifier?.clear();
-      recaptchaVerifier = null;
-    };
-  }, []);
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 10);
-    setRawPhone(raw);
-    setDisplayPhone(formatDisplay(raw));
-    setError("");
-  };
-
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!isValidIndianPhone(rawPhone)) {
-      setError("Please enter a valid 10-digit Indian mobile number.");
-      return;
-    }
-
+  const handleGoogleLogin = async () => {
     setLoading(true);
-
+    setError("");
     try {
-      // Diagnostic warnings
-      if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY === 'AIzaSyDummyKeyForBuildTimePrerenderingOnly') {
-        console.warn("⚠️ Firebase Phone Auth Warning: running with dummy API Key. Verify NEXT_PUBLIC_FIREBASE_API_KEY is configured in your production Vercel project environment variables.");
+      console.log("[Auth Diagnostics] Initializing Google Sign-In Popup...");
+      const firebaseUser = await signInWithGoogle();
+      
+      console.log("[Auth Diagnostics] Google login success. UID:", firebaseUser.uid);
+      
+      // Check Firestore doc
+      const userDoc = await getUser(firebaseUser.uid);
+      if (!userDoc) {
+        console.log("[Auth Diagnostics] User document not found. Seeding new Firestore record...");
+        await createUser(firebaseUser.uid, {
+          name: firebaseUser.displayName || "Customer",
+          phone: firebaseUser.phoneNumber || "",
+          email: firebaseUser.email || "",
+          photoURL: firebaseUser.photoURL || "",
+          role: "customer",
+          addresses: []
+        });
+        console.log("[Auth Diagnostics] Seeding complete.");
+      } else {
+        console.log("[Auth Diagnostics] Returning user record found in Firestore.");
       }
-
-      console.log(`[Auth Diagnostics] Initiating OTP send process for E.164 phone: +91${rawPhone}`);
-      const verifier = setupRecaptcha();
-      const e164Phone = `+91${rawPhone}`;
-
-      const result = await signInWithPhoneNumber(auth, e164Phone, verifier);
-      console.log("[Auth Diagnostics] OTP sent successfully. confirmationResult instance acquired.");
-      setConfirmationResult(result);
-      setStep("otp");
-    } catch (err: unknown) {
-      console.error("[Auth Diagnostics] Firebase signInWithPhoneNumber failed:", err);
-      const firebaseError = err as { code?: string; message?: string };
-      let message = "Failed to send OTP. Please try again.";
-
-      if (firebaseError.code === "auth/invalid-phone-number") {
-        message = "Invalid phone number format. Please check the digits.";
-      } else if (firebaseError.code === "auth/too-many-requests") {
-        message = "Too many requests. Please wait a few minutes before trying again.";
-      } else if (firebaseError.code === "auth/quota-exceeded") {
-        message = "SMS quota exceeded. Firebase SMS daily limit hit. Please try later.";
-      } else if (firebaseError.code === "auth/unauthorized-domain") {
+      
+      alert("🎉 Logged in successfully!");
+      router.replace("/");
+    } catch (err: any) {
+      console.error("[Auth Diagnostics] Google Sign-In failure:", err);
+      let message = "Failed to sign in with Google. Please try again.";
+      if (err.code === "auth/unauthorized-domain") {
         message = "Unauthorized Domain: Please verify that 'food-at-door.vercel.app' is added to Firebase Authentication > Settings > Authorized Domains.";
-        console.error("❌ Critical: Domain 'food-at-door.vercel.app' is not authorized in Firebase Console.");
-      } else if (firebaseError.code === "auth/invalid-api-key") {
-        message = "Invalid API Key configuration. Check your Vercel NEXT_PUBLIC_FIREBASE_API_KEY env variable.";
-      } else if (firebaseError.message) {
-        message = `Auth Error (${firebaseError.code || 'UNKNOWN'}): ${firebaseError.message}`;
+      } else if (err.code === "auth/popup-closed-by-user") {
+        message = "Google sign-in popup was closed before completion.";
+      } else if (err.message) {
+        message = err.message;
       }
-
       setError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifySuccess = async () => {
-    try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
-
-      const userRef = doc(db, "users", currentUser.uid);
-      const snapshot = await getDoc(userRef);
-
-      if (snapshot.exists() && snapshot.data()?.name) {
-        // Returning user — go to home
-        router.replace("/");
-      } else {
-        // New user — go to profile setup
-        router.replace("/auth/register");
-      }
-    } catch {
-      router.replace("/");
-    }
-  };
-
-  const handleResendOtp = async () => {
-    const verifier = setupRecaptcha();
-    const result = await signInWithPhoneNumber(
-      auth,
-      `+91${rawPhone}`,
-      verifier
-    );
-    setConfirmationResult(result);
-  };
-
   return (
     <main className={styles.page}>
-      {/* Hidden reCAPTCHA mount point */}
-      <div id="recaptcha-container" aria-hidden="true" />
-
       <div className={styles.card} role="main">
         {/* Brand header */}
         <div className={styles.brand}>
@@ -165,138 +69,63 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Step: Phone number */}
-        {step === "phone" && (
-          <div className={styles.stepIn}>
-            <h2 className={styles.heading}>Welcome back 👋</h2>
-            <p className={styles.subheading}>
-              Enter your mobile number to continue
-            </p>
+        <div className={styles.stepIn}>
+          <h2 className={styles.heading}>Welcome 👋</h2>
+          <p className={styles.subheading}>
+            Sign in to access your dashboard, track orders, and configure saved addresses.
+          </p>
 
-            <form
-              onSubmit={handleSendOtp}
-              className={styles.form}
-              noValidate
-              aria-label="Phone number login form"
-            >
-              <div>
-                <label htmlFor="phone-input" className={styles.fieldLabel}>
-                  Mobile Number
-                </label>
-
-                <div className={styles.phoneRow}>
-                  <div
-                    className={styles.countryCode}
-                    aria-label="Country code India +91"
-                  >
-                    <span className={styles.flag} aria-hidden="true">🇮🇳</span>
-                    <span>+91</span>
-                  </div>
-
-                  <input
-                    id="phone-input"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel-national"
-                    placeholder="98765 43210"
-                    value={displayPhone}
-                    onChange={handlePhoneChange}
-                    disabled={loading}
-                    className={styles.input}
-                    aria-label="10-digit mobile number"
-                    aria-required="true"
-                    aria-describedby={error ? "phone-error" : undefined}
-                    maxLength={11}
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div
-                  id="phone-error"
-                  className={styles.error}
-                  role="alert"
-                  aria-live="assertive"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                  {error}
-                </div>
-              )}
-
-              <button
-                id="send-otp-btn"
-                type="submit"
-                className={styles.btn}
-                disabled={rawPhone.length !== 10 || loading}
-                aria-busy={loading}
+          {error && (
+            <div className={styles.error} role="alert" style={{ marginBottom: "16px" }}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
               >
-                {loading ? (
-                  <>
-                    <span className={styles.spinner} aria-hidden="true" />
-                    Sending OTP…
-                  </>
-                ) : (
-                  <>
-                    Get OTP
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </>
-                )}
-              </button>
-            </form>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {error}
+            </div>
+          )}
 
-            <p className={styles.footerNote}>
-              By continuing, you agree to our{" "}
-              <a href="/terms" tabIndex={0}>
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="/privacy" tabIndex={0}>
-                Privacy Policy
-              </a>
-              .
-            </p>
-          </div>
-        )}
+          <button
+            onClick={handleGoogleLogin}
+            className={styles.btn}
+            disabled={loading}
+            aria-busy={loading}
+            style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "center" }}
+          >
+            {loading ? (
+              <>
+                <span className={styles.spinner} aria-hidden="true" />
+                Signing in…
+              </>
+            ) : (
+              <>
+                <Chrome size={18} />
+                <span>Continue with Google</span>
+              </>
+            )}
+          </button>
+        </div>
 
-        {/* Step: OTP verification */}
-        {step === "otp" && confirmationResult && (
-          <OtpVerification
-            phoneNumber={rawPhone}
-            confirmationResult={confirmationResult}
-            onSuccess={handleVerifySuccess}
-            onBack={() => {
-              setStep("phone");
-              setError("");
-              recaptchaVerifier?.clear();
-              recaptchaVerifier = null;
-            }}
-            onResend={handleResendOtp}
-          />
-        )}
+        <p className={styles.footerNote}>
+          By continuing, you agree to our{" "}
+          <a href="/terms" tabIndex={0}>
+            Terms of Service
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" tabIndex={0}>
+            Privacy Policy
+          </a>
+          .
+        </p>
       </div>
     </main>
   );
