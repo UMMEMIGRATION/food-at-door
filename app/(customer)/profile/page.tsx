@@ -103,9 +103,9 @@ export default function ProfilePage() {
     try {
       await signOut();
       alert("👋 Logged out successfully!");
-      router.push("/");
+      router.push("/login");
     } catch {
-      router.push("/");
+      router.push("/login");
     }
   };
 

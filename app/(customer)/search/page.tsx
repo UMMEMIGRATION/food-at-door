@@ -5,23 +5,19 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Search, X, Clock, ChevronRight, Compass, ShoppingBag, ClipboardList, User } from "lucide-react";
 import styles from "./search.module.css";
 
+import { db, auth } from "@/lib/firebase/config";
+import { signInAnonymously, signInWithEmailAndPassword } from "firebase/auth";
+import { collection, onSnapshot, query as fsQuery, orderBy, getDocs } from "firebase/firestore";
+import { SearchRestaurant, matchSearch } from "@/lib/searchHelper";
+
 interface SearchResult {
   id: string;
   name: string;
   type: "restaurant" | "dish";
   meta: string; // e.g. "Biryani • ₹380" or "Fast Food • 4.8 Rating"
   emoji: string;
+  restaurantId?: string; // pointer to go to restaurant detail page
 }
-
-const MOCK_DATA: SearchResult[] = [
-  { id: "s-1", name: "Paradise Biryani", type: "restaurant", meta: "Hyderabadi Biryani • ⭐ 4.8", emoji: "🍛" },
-  { id: "s-2", name: "Special Chicken Biryani", type: "dish", meta: "Paradise Biryani • ₹380", emoji: "🍛" },
-  { id: "s-3", name: "Cafe Niloufer", type: "restaurant", meta: "Chai & Bakery • ⭐ 4.9", emoji: "☕" },
-  { id: "s-4", name: "Osmania Biscuits", type: "dish", meta: "Cafe Niloufer • ₹150", emoji: "🍪" },
-  { id: "s-5", name: "Bun Maska", type: "dish", meta: "Cafe Niloufer • ₹80", emoji: "🥯" },
-  { id: "s-6", name: "Shah Ghouse", type: "restaurant", meta: "Biryani & Mandi • ⭐ 4.7", emoji: "🍗" },
-  { id: "s-7", name: "Chicken Mandi", type: "dish", meta: "Shah Ghouse • ₹510", emoji: "🍗" }
-];
 
 const TRENDING_DISHES = ["Chicken Biryani", "Ginger Chai", "Shawarma", "Dosas", "Mandi", "Apricot Delight"];
 
@@ -34,14 +30,111 @@ export default function SearchPage() {
     "Chai",
     "Mandi"
   ]);
+  const [firestoreRestaurants, setFirestoreRestaurants] = useState<SearchRestaurant[]>([]);
+
+  React.useEffect(() => {
+    let unsubscribeRestaurants = () => {};
+
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        setFirestoreRestaurants([]);
+        return;
+      }
+
+      const q = fsQuery(collection(db, "restaurants"), orderBy("rating", "desc"));
+      unsubscribeRestaurants = onSnapshot(q, async (snap) => {
+        const restaurantPromises = snap.docs.map(async (docSnap) => {
+          const data = docSnap.data();
+          
+          const cuisinesList: string[] = Array.isArray(data.cuisine) 
+            ? data.cuisine 
+            : (typeof data.cuisine === 'string' ? data.cuisine.split(',').map((c: string) => c.trim()) : []);
+
+          let menuItemsList: any[] = [];
+          try {
+            const menuSnap = await getDocs(collection(db, "restaurants", docSnap.id, "menuItems"));
+            menuSnap.forEach(itemDoc => {
+              const itemData = itemDoc.data();
+              const name = itemData.name || "";
+              const category = itemData.category || "";
+              const description = itemData.description || "";
+              const price = itemData.price || 0;
+              menuItemsList.push({ name, category, description, price });
+            });
+          } catch (err) {
+            console.error("Error loading menu items for listing:", docSnap.id, err);
+          }
+
+          return {
+            id: docSnap.id,
+            name: data.name || "Unnamed Restaurant",
+            cuisine: cuisinesList.join(", ") || "Indian",
+            category: data.category || cuisinesList[0] || "Indian",
+            menuItems: menuItemsList,
+            rating: data.rating || 4.5,
+            deliveryTime: `${data.deliveryTime || 30} mins`,
+            distance: `${data.distance || 2.4} km`,
+            avgPrice: `₹${data.minOrder || 200} for one`,
+            emoji: data.logo || "🍽️",
+            isOpen: data.isOpen !== undefined ? data.isOpen : true
+          };
+        });
+        const mapped = await Promise.all(restaurantPromises);
+        setFirestoreRestaurants(mapped);
+      }, (err) => {
+        console.error("Error with restaurants onSnapshot subscription:", err);
+      });
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeRestaurants();
+    };
+  }, []);
 
   const filteredResults = useMemo(() => {
     if (!query.trim()) return [];
-    return MOCK_DATA.filter(item => 
-      item.name.toLowerCase().includes(query.toLowerCase()) ||
-      item.meta.toLowerCase().includes(query.toLowerCase())
-    );
-  }, [query]);
+    const term = query.toLowerCase();
+
+    const results: SearchResult[] = [];
+
+    firestoreRestaurants.forEach(r => {
+      // If the restaurant name matches or its cuisine/category matches, we display the restaurant
+      const matchesRestaurant = r.name.toLowerCase().includes(term) ||
+                               r.cuisine.toLowerCase().includes(term) ||
+                               r.category.toLowerCase().includes(term);
+
+      if (matchesRestaurant) {
+        results.push({
+          id: r.id,
+          name: r.name,
+          type: "restaurant",
+          meta: `${r.cuisine} • ⭐ ${r.rating}`,
+          emoji: r.emoji,
+          restaurantId: r.id
+        });
+      }
+
+      // Check containing menu items
+      r.menuItems?.forEach(item => {
+        if (item.name.toLowerCase().includes(term) || 
+            item.category.toLowerCase().includes(term) || 
+            item.description.toLowerCase().includes(term)) {
+          // Add as dish result
+          results.push({
+            id: `${r.id}_${item.name}`,
+            name: item.name,
+            type: "dish",
+            meta: `${r.name} • ₹${item.price}`,
+            emoji: "🍛",
+            restaurantId: r.id
+          });
+        }
+      });
+    });
+
+    return results;
+  }, [firestoreRestaurants, query]);
 
   const handleSelectKeyword = (keyword: string) => {
     setQuery(keyword);
@@ -57,9 +150,8 @@ export default function SearchPage() {
   };
 
   const handleResultClick = (item: SearchResult) => {
-    alert(`🔍 Opening detail page for ${item.name} (${item.type})`);
-    if (item.type === "restaurant") {
-      router.push(`/restaurant/${item.id}`);
+    if (item.restaurantId) {
+      router.push(`/restaurant/${item.restaurantId}?search=${encodeURIComponent(query)}`);
     } else {
       router.push("/");
     }

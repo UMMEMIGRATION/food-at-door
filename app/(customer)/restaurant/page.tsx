@@ -14,15 +14,25 @@ import {
   Sparkles
 } from "lucide-react";
 import styles from "./restaurant.module.css";
+import { db, auth } from "@/lib/firebase/config";
+import { signInAnonymously, signInWithEmailAndPassword } from "firebase/auth";
+import { collection, onSnapshot, query, orderBy, getDocs } from "firebase/firestore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & Mock Data
 // ─────────────────────────────────────────────────────────────────────────────
 
+interface MenuItem {
+  name: string;
+  category: string;
+  description: string;
+}
+
 interface Restaurant {
   id: string;
   name: string;
   cuisineList: string[]; // for structured filtering
+  menuItems?: MenuItem[];
   rating: number;
   deliveryTime: number; // in mins (for sorting)
   distance: number; // in km (for details)
@@ -174,10 +184,78 @@ export default function RestaurantListingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState("All");
   const [sortBy, setSortBy] = useState<"rating" | "deliveryTime" | "none">("none");
+  const [firestoreRestaurants, setFirestoreRestaurants] = useState<Restaurant[]>([]);
+
+  React.useEffect(() => {
+    let unsubscribeRestaurants = () => {};
+
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        setFirestoreRestaurants([]);
+        return;
+      }
+
+      const q = query(collection(db, "restaurants"), orderBy("rating", "desc"));
+      unsubscribeRestaurants = onSnapshot(q, async (snap) => {
+        const restaurantPromises = snap.docs.map(async (docSnap) => {
+          const data = docSnap.data();
+          
+          const cuisinesList: string[] = Array.isArray(data.cuisine) 
+            ? data.cuisine 
+            : (typeof data.cuisine === 'string' ? data.cuisine.split(',').map((c: string) => c.trim()) : []);
+
+          let menuItemsList: MenuItem[] = [];
+          try {
+            const menuSnap = await getDocs(collection(db, "restaurants", docSnap.id, "menuItems"));
+            menuSnap.forEach(itemDoc => {
+              const itemData = itemDoc.data();
+              const name = itemData.name || "";
+              const category = itemData.category || "";
+              const description = itemData.description || "";
+              menuItemsList.push({ name, category, description });
+            });
+          } catch (err) {
+            console.error("Error loading menu items for listing:", docSnap.id, err);
+          }
+
+          return {
+            id: docSnap.id,
+            name: data.name || "Unnamed Restaurant",
+            cuisineList: cuisinesList.length > 0 ? cuisinesList : ["Indian"],
+            menuItems: menuItemsList,
+            rating: data.rating || 4.5,
+            deliveryTime: data.deliveryTime || 30,
+            distance: parseFloat(data.distance || (1.5 + Math.random() * 3).toFixed(1)),
+            costForOne: data.minOrder || 200,
+            emoji: data.logo || "🍽️",
+            promo: data.promo || ""
+          };
+        });
+        const mapped = await Promise.all(restaurantPromises);
+        setFirestoreRestaurants(mapped);
+      }, (err) => {
+        console.error("Error with restaurants onSnapshot subscription:", err);
+      });
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeRestaurants();
+    };
+  }, []);
 
   // ── Filter & Sort Logic ────────────────────────────────────────────────────
   const processedRestaurants = useMemo(() => {
-    let result = [...RESTAURANTS];
+    // Combine mock RESTAURANTS list and firestore list
+    const combined = [...firestoreRestaurants];
+    // Add mock if they don't exist in firestore list
+    RESTAURANTS.forEach(mockR => {
+      if (!combined.some(r => r.id === mockR.id)) {
+        combined.push(mockR);
+      }
+    });
+
+    let result = combined;
 
     // 1. Filter by Search Query
     if (searchQuery.trim()) {
@@ -185,7 +263,12 @@ export default function RestaurantListingPage() {
       result = result.filter(
         (r) =>
           r.name.toLowerCase().includes(q) ||
-          r.cuisineList.some((c) => c.toLowerCase().includes(q))
+          r.cuisineList.some((c) => c.toLowerCase().includes(q)) ||
+          (r.menuItems && r.menuItems.some((item) =>
+            item.name.toLowerCase().includes(q) ||
+            item.category.toLowerCase().includes(q) ||
+            item.description.toLowerCase().includes(q)
+          ))
       );
     }
 
@@ -202,7 +285,7 @@ export default function RestaurantListingPage() {
     }
 
     return result;
-  }, [searchQuery, selectedCuisine, sortBy]);
+  }, [firestoreRestaurants, searchQuery, selectedCuisine, sortBy]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleClearFilters = () => {
@@ -323,13 +406,32 @@ export default function RestaurantListingPage() {
               <div 
                 key={restaurant.id} 
                 className={styles.restaurantCard}
-                onClick={() => router.push(`/restaurant/${restaurant.id}`)}
+                onClick={() => {
+                  const url = searchQuery
+                    ? `/restaurant/${restaurant.id}?search=${encodeURIComponent(searchQuery)}`
+                    : `/restaurant/${restaurant.id}`;
+                  router.push(url);
+                }}
                 role="button"
                 tabIndex={0}
               >
                 {/* Left side: Styled Image container */}
                 <div className={styles.imageWrap}>
-                  <span className={styles.emoji} role="img" aria-label={restaurant.name}>{restaurant.emoji}</span>
+                  {restaurant.emoji && (restaurant.emoji.startsWith("http") || restaurant.emoji.startsWith("data:image")) && 
+                   !restaurant.emoji.includes("placeholder.com") && !restaurant.emoji.includes("holder.com") ? (
+                    <img 
+                      src={restaurant.emoji} 
+                      alt={restaurant.name} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+                      onError={(e) => {
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=80&q=80";
+                      }}
+                    />
+                  ) : (
+                    <span className={styles.emoji} role="img" aria-label={restaurant.name}>
+                      {restaurant.emoji && !restaurant.emoji.includes("http") ? restaurant.emoji : "🍽️"}
+                    </span>
+                  )}
                 </div>
 
                 {/* Right side: Detailed info */}
@@ -343,6 +445,22 @@ export default function RestaurantListingPage() {
                   </div>
 
                   <p className={styles.cuisines}>{restaurant.cuisineList.join(", ")}</p>
+
+                  {searchQuery && (() => {
+                    const matchedItem = restaurant.menuItems?.find(item => 
+                      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                    if (matchedItem) {
+                      return (
+                        <div style={{ marginTop: "4px", fontSize: "11px", color: "#FF6B35", fontWeight: 600 }}>
+                          Matched item: {matchedItem.name}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   <div className={styles.metaRow}>
                     <div className={styles.metaItem}>

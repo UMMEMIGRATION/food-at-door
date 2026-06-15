@@ -6,52 +6,64 @@
       "static/css/app/(customer)/page.css",
       "static/chunks/app/(customer)/page.js"
     ],
+    "/(customer)/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(customer)/layout.js"
+    ],
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/(customer)/orders/[id]/page": [
+    "/(customer)/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/(customer)/orders/[id]/page.css",
-      "static/chunks/app/(customer)/orders/[id]/page.js"
+      "static/css/app/(customer)/login/page.css",
+      "static/chunks/app/(customer)/login/page.js"
     ],
-    "/(customer)/settings/page": [
+    "/(customer)/search/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/(customer)/settings/page.css",
-      "static/chunks/app/(customer)/settings/page.js"
+      "static/css/app/(customer)/search/page.css",
+      "static/chunks/app/(customer)/search/page.js"
     ],
-    "/(customer)/payments/page": [
+    "/(customer)/restaurant/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/(customer)/payments/page.css",
-      "static/chunks/app/(customer)/payments/page.js"
+      "static/css/app/(customer)/restaurant/page.css",
+      "static/chunks/app/(customer)/restaurant/page.js"
     ],
-    "/(customer)/notifications/page": [
+    "/(customer)/cart/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/(customer)/notifications/page.css",
-      "static/chunks/app/(customer)/notifications/page.js"
+      "static/css/app/(customer)/cart/page.css",
+      "static/chunks/app/(customer)/cart/page.js"
     ],
-    "/(customer)/coupons/page": [
+    "/(customer)/orders/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/(customer)/coupons/page.css",
-      "static/chunks/app/(customer)/coupons/page.js"
+      "static/css/app/(customer)/orders/page.css",
+      "static/chunks/app/(customer)/orders/page.js"
     ],
-    "/(customer)/wallet/page": [
+    "/(customer)/profile/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/(customer)/wallet/page.css",
-      "static/chunks/app/(customer)/wallet/page.js"
+      "static/css/app/(customer)/profile/page.css",
+      "static/chunks/app/(customer)/profile/page.js"
     ],
-    "/_not-found/page": [
+    "/(customer)/signup/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/css/app/(customer)/signup/page.css",
+      "static/chunks/app/(customer)/signup/page.js"
+    ],
+    "/(customer)/forgot-password/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(customer)/forgot-password/page.css",
+      "static/chunks/app/(customer)/forgot-password/page.js"
     ]
   }
 }
