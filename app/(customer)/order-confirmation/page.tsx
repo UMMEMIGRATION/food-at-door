@@ -132,7 +132,7 @@ export default function OrderConfirmationPage() {
         {/* ── Action Buttons ─────────────────────────────────────────────────── */}
         <div className={styles.btnGroup}>
           <button 
-            onClick={() => router.push(`/orders/${orderId.replace('#', '')}`)} 
+            onClick={() => router.push(`/orders/track?id=${orderId.replace('#', '')}`)} 
             className={styles.primaryBtn}
             aria-label="Track order live on map"
           >

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -17,11 +17,19 @@ import {
   Clock
 } from "lucide-react";
 import styles from "./orders.module.css";
+import { auth, db } from "@/lib/firebase";
+import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { useCartStore } from "@/store/useCartStore";
 
-// ── Types & Mock Data ────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────
 interface OrderItem {
+  id: string;
   name: string;
+  price: number;
   qty: number;
+  emoji: string;
+  description: string;
 }
 
 interface Order {
@@ -34,75 +42,107 @@ interface Order {
   statusText: string;
   items: OrderItem[];
   totalPrice: number;
+  image?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
 }
-
-const MOCK_ORDERS: Order[] = [
-  {
-    id: "8409-1834",
-    restaurantId: "f1",
-    restaurantName: "Paradise Biryani",
-    restaurantEmoji: "🍛",
-    date: "Today, 04:12 PM",
-    status: "active",
-    statusText: "Preparing food",
-    items: [
-      { name: "Special Chicken Biryani", qty: 2 },
-      { name: "Niloufer Special Tea", qty: 1 }
-    ],
-    totalPrice: 866
-  },
-  {
-    id: "9218-4721",
-    restaurantId: "p1",
-    restaurantName: "Cafe Niloufer",
-    restaurantEmoji: "☕",
-    date: "Yesterday, 08:30 AM",
-    status: "delivered",
-    statusText: "Delivered",
-    items: [
-      { name: "Osmania Biscuits (Box)", qty: 1 },
-      { name: "Bun Maska", qty: 2 },
-      { name: "Special Ginger Chai", qty: 3 }
-    ],
-    totalPrice: 420
-  },
-  {
-    id: "1932-8491",
-    restaurantId: "f2",
-    restaurantName: "Shah Ghouse",
-    restaurantEmoji: "🍗",
-    date: "08 Jun 2026, 09:15 PM",
-    status: "delivered",
-    statusText: "Delivered",
-    items: [
-      { name: "Chicken Mandi (Half)", qty: 1 },
-      { name: "Double ka Meetha", qty: 1 }
-    ],
-    totalPrice: 510
-  },
-  {
-    id: "3821-9304",
-    restaurantId: "p3",
-    restaurantName: "Chutneys",
-    restaurantEmoji: "🥞",
-    date: "04 Jun 2026, 08:12 AM",
-    status: "cancelled",
-    statusText: "Cancelled",
-    items: [
-      { name: "Guntur Idli", qty: 2 },
-      { name: "Babai Hotel Dosa", qty: 1 }
-    ],
-    totalPrice: 270
-  }
-];
 
 export default function OrderHistoryPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "delivered" | "cancelled">("all");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const { clearCart, addItem, updateQuantity } = useCartStore();
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setOrders([]);
+        setLoading(false);
+        return;
+      }
+
+      const q = query(
+        collection(db, "orders"),
+        where("customerId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+
+      const unsubscribeSnap = onSnapshot(q, (snap) => {
+        const list = snap.docs.map((docSnap) => {
+          const data = docSnap.data();
+          
+          let statusText = "Pending Approval";
+          let status: "active" | "delivered" | "cancelled" = "active";
+          
+          if (data.status === "pending") {
+            statusText = "Pending Approval";
+            status = "active";
+          } else if (data.status === "accepted") {
+            statusText = "Preparing food";
+            status = "active";
+          } else if (data.status === "picked_up" || data.status === "out_for_delivery") {
+            statusText = "Out for Delivery";
+            status = "active";
+          } else if (data.status === "delivered") {
+            statusText = "Delivered";
+            status = "delivered";
+          } else if (data.status === "cancelled" || data.status === "rejected") {
+            statusText = "Cancelled";
+            status = "cancelled";
+          }
+
+          let dateStr = "Just now";
+          if (data.createdAt?.seconds) {
+            const date = new Date(data.createdAt.seconds * 1000);
+            dateStr = date.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+          }
+
+          return {
+            id: docSnap.id,
+            restaurantId: data.restaurantId || "",
+            restaurantName: data.restaurantName || "Paradise Biryani",
+            restaurantEmoji: data.restaurantEmoji || "🍛",
+            date: dateStr,
+            status,
+            statusText,
+            items: (data.items || []).map((item: any) => ({
+              id: item.itemId || item.id || "",
+              name: item.name || "Food Item",
+              price: item.price || 0,
+              qty: item.quantity || 1,
+              emoji: item.image || item.emoji || "🍔",
+              description: item.description || ""
+            })),
+            totalPrice: data.total || data.grandTotal || 0,
+            image: data.restaurantEmoji || data.image || data.restaurantImage || "🍛",
+            paymentMethod: data.paymentMethod || "ONLINE",
+            paymentStatus: data.paymentStatus || "Paid"
+          };
+        });
+        setOrders(list);
+        setLoading(false);
+      }, (error) => {
+        console.error("Error fetching customer orders snapshot:", error);
+        setLoading(false);
+      });
+
+      return () => unsubscribeSnap();
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
 
   const filteredOrders = useMemo(() => {
-    return MOCK_ORDERS.filter((order) => {
+    return orders.filter((order) => {
       const matchesSearch = 
         order.restaurantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -111,9 +151,27 @@ export default function OrderHistoryPage() {
       
       return matchesSearch && matchesFilter;
     });
-  }, [searchQuery, filter]);
+  }, [orders, searchQuery, filter]);
 
   const handleReorder = (order: Order) => {
+    // 1. Clear cart
+    clearCart();
+    
+    // 2. Add each item from the order to the cart
+    order.items.forEach(item => {
+      addItem({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        emoji: item.emoji,
+        description: item.description,
+        restaurantId: order.restaurantId,
+        restaurantName: order.restaurantName
+      });
+      // Set the exact quantity
+      updateQuantity(item.id, item.qty);
+    });
+
     alert(`🛒 Reordering items from ${order.restaurantName}! Items added to cart.`);
     router.push("/cart");
   };
@@ -184,7 +242,18 @@ export default function OrderHistoryPage() {
             {filteredOrders.map((order) => (
               <div key={order.id} className={styles.orderCard}>
                 <div className={styles.cardHeader}>
-                  <span className={styles.restaurantEmoji}>{order.restaurantEmoji}</span>
+                  {order.image && (order.image.startsWith("http") || order.image.startsWith("data:image")) ? (
+                    <img 
+                      src={order.image} 
+                      alt={order.restaurantName} 
+                      className={styles.restaurantImage}
+                      onError={(e) => {
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=80&q=80";
+                      }}
+                    />
+                  ) : (
+                    <span className={styles.restaurantEmoji}>{order.image || "🍛"}</span>
+                  )}
                   <div className={styles.restaurantMeta}>
                     <h3 className={styles.restaurantName}>{order.restaurantName}</h3>
                     <span className={styles.orderDate}>{order.date}</span>
@@ -207,6 +276,14 @@ export default function OrderHistoryPage() {
                       </div>
                     ))}
                   </div>
+
+                  <div style={{ marginTop: "10px", fontSize: "11px", color: "#9CA3AF", display: "flex", justifyContent: "space-between", borderTop: "1px dashed rgba(255,255,255,0.06)", paddingTop: "8px" }}>
+                    <span>Payment: {order.paymentMethod === "COD" ? "💵 Cash on Delivery" : "💳 Online Payment"}</span>
+                    <span style={{ color: order.paymentStatus === "Paid" || order.paymentStatus === "Collected" ? "#10B981" : "#F59E0B", fontWeight: 600 }}>
+                      {order.paymentStatus === "Collected" ? "Collected" : order.paymentStatus}
+                    </span>
+                  </div>
+
                   <div className={styles.priceRow}>
                     <span className={styles.totalLabel}>Grand Total</span>
                     <span className={styles.totalValue}>₹{order.totalPrice}</span>
@@ -216,7 +293,7 @@ export default function OrderHistoryPage() {
                 <div className={styles.cardActions}>
                   {order.status === "active" ? (
                     <button 
-                      onClick={() => router.push(`/orders/${order.id}`)}
+                      onClick={() => router.push(`/orders/track?id=${order.id}`)}
                       className={styles.trackBtn}
                     >
                       <Navigation size={14} fill="#fff" />

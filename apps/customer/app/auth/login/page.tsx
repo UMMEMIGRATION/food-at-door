@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import type { ConfirmationResult } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -106,10 +107,18 @@ export default function LoginPage() {
       const verifier = setupRecaptcha();
       const e164Phone = `+91${rawPhone}`;
 
+      await verifier.render();
       const result = await signInWithPhoneNumber(auth, e164Phone, verifier);
       setConfirmationResult(result);
       setStep("otp");
     } catch (err: unknown) {
+      console.error("Failed to send OTP:", err);
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear();
+        } catch (e) {}
+        recaptchaVerifier = null;
+      }
       const firebaseError = err as { code?: string };
       let message = "Failed to send OTP. Please try again.";
 
@@ -158,13 +167,26 @@ export default function LoginPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   const handleResendOtp = async () => {
-    const verifier = setupRecaptcha();
-    const result = await signInWithPhoneNumber(
-      auth,
-      `+91${rawPhone}`,
-      verifier
-    );
-    setConfirmationResult(result);
+    setError("");
+    try {
+      const verifier = setupRecaptcha();
+      await verifier.render();
+      const result = await signInWithPhoneNumber(
+        auth,
+        `+91${rawPhone}`,
+        verifier
+      );
+      setConfirmationResult(result);
+    } catch (err: any) {
+      console.error("Failed to resend OTP:", err);
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear();
+        } catch (e) {}
+        recaptchaVerifier = null;
+      }
+      throw err;
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -184,7 +206,7 @@ export default function LoginPage() {
           </div>
           <h1 className={styles.brandName}>Food At Door</h1>
           <p className={styles.brandTagline}>
-            Hyderabad&apos;s favourite food, delivered fast
+            India&apos;s favourite food, delivered fast
           </p>
         </div>
 
@@ -298,13 +320,13 @@ export default function LoginPage() {
             {/* Footer note */}
             <p className={styles.footerNote}>
               By continuing, you agree to our{" "}
-              <a href="/terms" tabIndex={0}>
+              <Link href="/terms" tabIndex={0}>
                 Terms of Service
-              </a>{" "}
+              </Link>{" "}
               and{" "}
-              <a href="/privacy" tabIndex={0}>
+              <Link href="/privacy" tabIndex={0}>
                 Privacy Policy
-              </a>
+              </Link>
               .
             </p>
           </div>

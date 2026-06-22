@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Chrome } from "lucide-react";
 import { auth, signInWithGoogle, getUser, createUser } from "@/lib/firebase";
 import styles from "./login.module.css";
@@ -65,7 +66,7 @@ export default function LoginPage() {
           </div>
           <h1 className={styles.brandName}>Food At Door</h1>
           <p className={styles.brandTagline}>
-            Hyderabad&apos;s favourite food, delivered fast
+            India&apos;s favourite food, delivered fast
           </p>
         </div>
 
@@ -117,13 +118,13 @@ export default function LoginPage() {
 
         <p className={styles.footerNote}>
           By continuing, you agree to our{" "}
-          <a href="/terms" tabIndex={0}>
+          <Link href="/terms" tabIndex={0}>
             Terms of Service
-          </a>{" "}
+          </Link>{" "}
           and{" "}
-          <a href="/privacy" tabIndex={0}>
+          <Link href="/privacy" tabIndex={0}>
             Privacy Policy
-          </a>
+          </Link>
           .
         </p>
       </div>

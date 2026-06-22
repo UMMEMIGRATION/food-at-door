@@ -20,7 +20,7 @@ import styles from "./home.module.css";
 import { STATE_LOCATIONS_DATABASE, searchLocations, ALL_CITIES_LIST } from "@/lib/locationDb";
 import { db, auth } from "@/lib/firebase/config";
 import { signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { collection, onSnapshot, query, orderBy, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, getDocs, where } from "firebase/firestore";
 import { matchSearch } from "@/lib/searchHelper";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -211,15 +211,23 @@ export default function CustomerHomePage() {
   }, []);
 
   React.useEffect(() => {
-    let unsubscribeRestaurants = () => {};
+    let unsubscribeRestaurants: (() => void) | null = null;
 
-    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (unsubscribeRestaurants) {
+        unsubscribeRestaurants();
+        unsubscribeRestaurants = null;
+      }
+
       if (!user) {
         setFirestoreRestaurants([]);
         return;
       }
 
-      const q = query(collection(db, "restaurants"), orderBy("rating", "desc"));
+      const q = query(
+        collection(db, "restaurants"),
+        where("status", "==", "approved")
+      );
       unsubscribeRestaurants = onSnapshot(q, async (snap) => {
         const restaurantPromises = snap.docs.map(async (docSnap) => {
           const data = docSnap.data();
@@ -293,6 +301,7 @@ export default function CustomerHomePage() {
           };
         });
         const mapped = await Promise.all(restaurantPromises);
+        mapped.sort((a, b) => b.rating - a.rating);
         setFirestoreRestaurants(mapped);
       }, (err) => {
         console.error("Error with restaurants onSnapshot subscription:", err);
@@ -301,7 +310,9 @@ export default function CustomerHomePage() {
 
     return () => {
       unsubscribeAuth();
-      unsubscribeRestaurants();
+      if (unsubscribeRestaurants) {
+        unsubscribeRestaurants();
+      }
     };
   }, []);
 
@@ -473,6 +484,7 @@ export default function CustomerHomePage() {
           const el = document.getElementById("search-input");
           el?.focus();
         }}
+        onFavoritesClick={() => router.push("/favorites")}
         onNotificationClick={() => router.push("/notifications")}
       />
 
@@ -575,9 +587,11 @@ export default function CustomerHomePage() {
                 <div 
                   key={restaurant.id} 
                   onClick={() => {
+                    console.log("[Restaurant Navigation] Tapped restaurant card ID:", restaurant.id, "Name:", restaurant.name);
                     const url = searchQuery 
-                      ? `/restaurant/${restaurant.id}?search=${encodeURIComponent(searchQuery)}`
-                      : `/restaurant/${restaurant.id}`;
+                      ? `/restaurant?id=${restaurant.id}&search=${encodeURIComponent(searchQuery)}`
+                      : `/restaurant?id=${restaurant.id}`;
+                    console.log("[Restaurant Navigation] Transitioning to URL:", url);
                     router.push(url);
                   }}
                   className={styles.restaurantCard} 
@@ -607,7 +621,7 @@ export default function CustomerHomePage() {
                     <h4 className={styles.cardName}>{restaurant.name}</h4>
                     <p className={styles.cardCuisine}>{restaurant.cuisine}</p>
                     {searchQuery && (() => {
-                      const matchedItem = restaurant.menuItems?.find(item => 
+                      const matchedItem = restaurant.menuItems?.find((item: any) => 
                         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         item.description.toLowerCase().includes(searchQuery.toLowerCase())

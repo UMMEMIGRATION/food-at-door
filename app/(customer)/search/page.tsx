@@ -7,7 +7,7 @@ import styles from "./search.module.css";
 
 import { db, auth } from "@/lib/firebase/config";
 import { signInAnonymously, signInWithEmailAndPassword } from "firebase/auth";
-import { collection, onSnapshot, query as fsQuery, orderBy, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query as fsQuery, orderBy, getDocs, where } from "firebase/firestore";
 import { SearchRestaurant, matchSearch } from "@/lib/searchHelper";
 
 interface SearchResult {
@@ -41,7 +41,10 @@ export default function SearchPage() {
         return;
       }
 
-      const q = fsQuery(collection(db, "restaurants"), orderBy("rating", "desc"));
+      const q = fsQuery(
+        collection(db, "restaurants"),
+        where("status", "==", "approved")
+      );
       unsubscribeRestaurants = onSnapshot(q, async (snap) => {
         const restaurantPromises = snap.docs.map(async (docSnap) => {
           const data = docSnap.data();
@@ -80,6 +83,7 @@ export default function SearchPage() {
           };
         });
         const mapped = await Promise.all(restaurantPromises);
+        mapped.sort((a, b) => b.rating - a.rating);
         setFirestoreRestaurants(mapped);
       }, (err) => {
         console.error("Error with restaurants onSnapshot subscription:", err);
@@ -151,7 +155,7 @@ export default function SearchPage() {
 
   const handleResultClick = (item: SearchResult) => {
     if (item.restaurantId) {
-      router.push(`/restaurant/${item.restaurantId}?search=${encodeURIComponent(query)}`);
+      router.push(`/restaurant?id=${item.restaurantId}&search=${encodeURIComponent(query)}`);
     } else {
       router.push("/");
     }

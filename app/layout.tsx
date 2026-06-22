@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Food At Door",
-  description: "Hyderabad's favourite food, delivered fast",
+  description: "India's favourite food, delivered fast",
 };
 
 export default function RootLayout({

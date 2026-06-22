@@ -20,28 +20,40 @@ interface CartStore {
 }
 
 export const useCartStore = create<CartStore>((set) => ({
-  items: [],
+  items: typeof window !== "undefined" ? JSON.parse(localStorage.getItem("fad_cart_items") || "[]") : [],
   addItem: (item) =>
     set((state) => {
       const existing = state.items.find((i) => i.id === item.id);
+      let newItems;
       if (existing) {
-        return {
-          items: state.items.map((i) =>
-            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-          ),
-        };
+        newItems = state.items.map((i) =>
+          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+        );
+      } else {
+        newItems = [...state.items, { ...item, quantity: 1 }];
       }
-      return { items: [...state.items, { ...item, quantity: 1 }] };
+      localStorage.setItem("fad_cart_items", JSON.stringify(newItems));
+      localStorage.removeItem("fad_cart_cleared");
+      return { items: newItems };
     }),
   removeItem: (id) =>
-    set((state) => ({
-      items: state.items.filter((i) => i.id !== id),
-    })),
+    set((state) => {
+      const newItems = state.items.filter((i) => i.id !== id);
+      localStorage.setItem("fad_cart_items", JSON.stringify(newItems));
+      return { items: newItems };
+    }),
   updateQuantity: (id, quantity) =>
-    set((state) => ({
-      items: state.items
+    set((state) => {
+      const newItems = state.items
         .map((i) => (i.id === id ? { ...i, quantity } : i))
-        .filter((i) => i.quantity > 0),
-    })),
-  clearCart: () => set({ items: [] }),
+        .filter((i) => i.quantity > 0);
+      localStorage.setItem("fad_cart_items", JSON.stringify(newItems));
+      return { items: newItems };
+    }),
+  clearCart: () =>
+    set(() => {
+      localStorage.setItem("fad_cart_items", "[]");
+      localStorage.setItem("fad_cart_cleared", "true");
+      return { items: [] };
+    }),
 }));

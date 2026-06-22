@@ -15,7 +15,8 @@ import {
   Search, 
   ShoppingBag, 
   ClipboardList, 
-  User as UserIcon
+  User as UserIcon,
+  Heart
 } from "lucide-react";
 import { auth, getUser, updateUser, onAuthChange, signOut } from "@/lib/firebase";
 import styles from "./profile.module.css";
@@ -202,6 +203,19 @@ export default function ProfilePage() {
                 <MapPin size={18} />
               </div>
               <span className={styles.menuTitle}>Saved Addresses</span>
+            </div>
+            <ChevronRight size={16} className={styles.menuArrow} />
+          </button>
+
+          <button 
+            onClick={() => router.push("/favorites")}
+            className={styles.menuItem}
+          >
+            <div className={styles.menuItemLeft}>
+              <div className={styles.menuIconWrap}>
+                <Heart size={18} />
+              </div>
+              <span className={styles.menuTitle}>My Favorites</span>
             </div>
             <ChevronRight size={16} className={styles.menuArrow} />
           </button>

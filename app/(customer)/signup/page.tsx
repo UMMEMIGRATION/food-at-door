@@ -2,52 +2,82 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Mail, Lock, Phone } from "lucide-react";
-import { signUpWithEmail, sendVerification, createUser } from "@/lib/firebase";
-import styles from "./login.module.css";
+import Link from "next/link";
+import { User, Mail, Lock } from "lucide-react";
+import { createUser, firebaseApp } from "@/lib/firebase";
+import { auth } from "@/lib/firebase/config";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import styles from "../login/login.module.css";
 
-export default function SignupPage() {
+export default function SignUpPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleSignup = async (e: React.FormEvent) => {
+
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password) {
-      setError("Please fill in Name, Email, and Password.");
+    if (!name || !email || !password || !confirmPassword) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
     setLoading(true);
     setError("");
     setSuccess("");
+
+
+    let userCredential = null;
+
     try {
-      const firebaseUser = await signUpWithEmail(email, password);
+      console.log("Initiating createUserWithEmailAndPassword...");
+      userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      await createUser(firebaseUser.uid, {
+
+    } catch (createErr: any) {
+      console.error("[Diagnostics] createUserWithEmailAndPassword failed:", createErr);
+      setError(`Create User Failure: ${createErr.message || createErr}`);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log("sendEmailVerification started");
+      await sendEmailVerification(userCredential.user);
+    } catch (sendErr: any) {
+      console.error("sendEmailVerification failed!", sendErr);
+      setError(`Verification Send Failure: ${sendErr.message || sendErr}`);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Create user profile in Firestore
+      await createUser(userCredential.user.uid, {
         name,
-        phone: phoneNumber || "",
-        phoneNumber: phoneNumber || "",
-        email: firebaseUser.email || email,
+        phone: "",
+        email: userCredential.user.email || email,
         photoURL: "",
         role: "customer",
         addresses: []
       });
 
-      await sendVerification(firebaseUser);
-
-      setSuccess("Account created successfully! Verification email has been sent. Please check your inbox before logging in.");
-      
+      setSuccess("Verification email sent. Please check inbox and spam folder.");
       setTimeout(() => {
-        router.replace("/login?verified=false");
-      }, 5000);
+        router.replace("/login");
+      }, 4000);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to create account. Please try again.");
+      console.error("[Auth Error] Profile setup failure:", err);
+      setError(err.message || "Failed to finalize account. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -56,22 +86,23 @@ export default function SignupPage() {
   return (
     <main className={styles.page}>
       <div className={styles.card} role="main">
-        {/* Back button */}
-        <button onClick={() => router.push("/login")} className={styles.backBtn}>
-          <ArrowLeft size={16} />
-          <span>Back to Login</span>
-        </button>
-
         {/* Brand header */}
         <div className={styles.brand}>
           <div className={styles.logoRing} aria-hidden="true">
             🍽️
           </div>
-          <h1 className={styles.brandName}>Create Account</h1>
-          <p className={styles.brandTagline}>Join Food At Door today</p>
+          <h1 className={styles.brandName}>Food At Door</h1>
+          <p className={styles.brandTagline}>
+            India&apos;s favourite food, delivered fast
+          </p>
         </div>
 
         <div className={styles.stepIn}>
+          <h2 className={styles.heading}>Create Account 🚀</h2>
+          <p className={styles.subheading}>
+            Sign up to order delicious meals and track deliveries.
+          </p>
+
           {error && (
             <div className={styles.error} role="alert" style={{ marginBottom: "16px" }}>
               <svg
@@ -92,86 +123,100 @@ export default function SignupPage() {
           )}
 
           {success && (
-            <div className={styles.successIcon} style={{ fontSize: "14px", padding: "16px", borderRadius: "10px", width: "100%", height: "auto", border: "1px solid rgba(16, 185, 129, 0.2)", color: "#A7F3D0", lineHeight: "1.5" }}>
+            <div className={styles.successIcon} style={{ fontSize: "14px", padding: "12px", borderRadius: "10px", width: "100%", height: "auto", border: "1px solid rgba(16, 185, 129, 0.2)", color: "#A7F3D0" }}>
               {success}
             </div>
           )}
 
-          {!success && (
-            <form onSubmit={handleSignup} className={styles.form}>
-              <div>
-                <label className={styles.fieldLabel}>Full Name</label>
-                <div style={{ position: "relative" }}>
-                  <User size={16} style={{ position: "absolute", left: "14px", top: "16px", color: "#6B7280" }} />
-                  <input
-                    type="text"
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={styles.input}
-                    style={{ paddingLeft: "42px" }}
-                    required
-                  />
-                </div>
+ <form onSubmit={handleSignUp} className={styles.form} style={{ marginBottom: "20px" }}>
+            <div>
+              <label className={styles.fieldLabel}>Full Name</label>
+              <div style={{ position: "relative" }}>
+                <User size={16} style={{ position: "absolute", left: "14px", top: "16px", color: "#6B7280" }} />
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={styles.input}
+                  style={{ paddingLeft: "42px" }}
+                  required
+                />
               </div>
+            </div>
 
-              <div>
-                <label className={styles.fieldLabel}>Email Address</label>
-                <div style={{ position: "relative" }}>
-                  <Mail size={16} style={{ position: "absolute", left: "14px", top: "16px", color: "#6B7280" }} />
-                  <input
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={styles.input}
-                    style={{ paddingLeft: "42px" }}
-                    required
-                  />
-                </div>
+            <div>
+              <label className={styles.fieldLabel}>Email Address</label>
+              <div style={{ position: "relative" }}>
+                <Mail size={16} style={{ position: "absolute", left: "14px", top: "16px", color: "#6B7280" }} />
+                <input
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={styles.input}
+                  style={{ paddingLeft: "42px" }}
+                  required
+                />
               </div>
+            </div>
 
-              <div>
-                <label className={styles.fieldLabel}>Phone Number (Optional)</label>
-                <div style={{ position: "relative" }}>
-                  <Phone size={16} style={{ position: "absolute", left: "14px", top: "16px", color: "#6B7280" }} />
-                  <input
-                    type="tel"
-                    placeholder="+91 99999 99999"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className={styles.input}
-                    style={{ paddingLeft: "42px" }}
-                  />
-                </div>
+            <div>
+              <label className={styles.fieldLabel}>Password</label>
+              <div style={{ position: "relative" }}>
+                <Lock size={16} style={{ position: "absolute", left: "14px", top: "16px", color: "#6B7280" }} />
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={styles.input}
+                  style={{ paddingLeft: "42px" }}
+                  required
+                />
               </div>
+            </div>
 
-              <div>
-                <label className={styles.fieldLabel}>Password</label>
-                <div style={{ position: "relative" }}>
-                  <Lock size={16} style={{ position: "absolute", left: "14px", top: "16px", color: "#6B7280" }} />
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={styles.input}
-                    style={{ paddingLeft: "42px" }}
-                    required
-                  />
-                </div>
+            <div>
+              <label className={styles.fieldLabel}>Confirm Password</label>
+              <div style={{ position: "relative" }}>
+                <Lock size={16} style={{ position: "absolute", left: "14px", top: "16px", color: "#6B7280" }} />
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={styles.input}
+                  style={{ paddingLeft: "42px" }}
+                  required
+                />
               </div>
+            </div>
 
-              <button type="submit" className={styles.btn} disabled={loading}>
-                {loading ? <span className={styles.spinner} /> : "Sign Up"}
-              </button>
-            </form>
-          )}
+            <button type="submit" className={styles.btn} disabled={loading}>
+              {loading ? <span className={styles.spinner} /> : "Create Account"}
+            </button>
+          </form>
 
-          <p className={styles.footerNote} style={{ marginTop: "24px" }}>
-            Already have an account? <a href="/login">Sign In</a>
+          <p className={styles.footerNote} style={{ marginTop: "20px" }}>
+            Already have an account? <Link href="/login">Sign In</Link>
+          </p>
+          <p className={styles.footerNote} style={{ marginTop: "12px" }}>
+            Or register instantly using <Link href="/login?method=phone" style={{ fontWeight: "600" }}>Mobile Number (OTP)</Link>
           </p>
         </div>
+
+        <p className={styles.footerNote}>
+          By continuing, you agree to our{" "}
+          <Link href="/terms" tabIndex={0}>
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" tabIndex={0}>
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
     </main>
   );

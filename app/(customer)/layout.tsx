@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { Capacitor } from "@capacitor/core";
+import { App } from "@capacitor/app";
 
 export default function CustomerLayout({
   children,
@@ -16,13 +18,30 @@ export default function CustomerLayout({
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const backButtonListener = App.addListener("backButton", (data) => {
+      if (data.canGoBack) {
+        window.history.back();
+      } else {
+        App.exitApp();
+      }
+    });
+
+    return () => {
+      backButtonListener.then((listener) => listener.remove());
+    };
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!pathname) return;
       setUser(currentUser);
 
       const isAuthRoute =
-        pathname === "/login" ||
-        pathname === "/signup" ||
-        pathname === "/forgot-password" ||
+        pathname?.includes("/login") ||
+        pathname?.includes("/signup") ||
+        pathname?.includes("/forgot-password") ||
         pathname?.startsWith("/auth");
 
       if (!currentUser) {
@@ -33,26 +52,36 @@ export default function CustomerLayout({
       } else {
         // User exists
         try {
-          // If email is not verified, we must sign out and redirect to login, EXCEPT for auth verification flows
-          if (!currentUser.emailVerified && currentUser.providerId === "firebase" && !currentUser.email?.endsWith("@example.com")) {
+          // If email is not verified, we must sign out and redirect to login, EXCEPT for auth verification flows and signup flow
+          const onSignupPage = pathname?.includes("/signup");
+          if (!currentUser.emailVerified && !currentUser.email?.endsWith("@example.com")) {
             const isPasswordProvider = currentUser.providerData.some(
               (p) => p.providerId === "password"
             );
-            if (isPasswordProvider) {
+            if (isPasswordProvider && !isAuthRoute && !onSignupPage) {
               // Not verified password login -> force signout/redirect
               await auth.signOut();
               setUser(null);
               setLoading(false);
-              if (!isAuthRoute) {
-                router.replace("/login?verified=false");
-              }
+              router.replace("/login?verified=false");
               return;
             }
           }
 
-          // If authenticated and on login/signup page, redirect to home
-          if (isAuthRoute) {
-            router.replace("/");
+          // If authenticated and on login/signup page, redirect to home ONLY IF verified
+          if (isAuthRoute && !onSignupPage) {
+            const isPhoneProvider = currentUser.providerData.some(
+              (p) => p.providerId === "phone"
+            );
+            const isVerified = currentUser.emailVerified || currentUser.email?.endsWith("@example.com") || isPhoneProvider;
+            if (isVerified) {
+              router.replace("/");
+            } else {
+              await auth.signOut();
+              setUser(null);
+              setLoading(false);
+              return;
+            }
           }
         } catch (e) {
           console.error("Auth layout checking error:", e);

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
   Search, 
@@ -16,7 +16,9 @@ import {
 import styles from "./restaurant.module.css";
 import { db, auth } from "@/lib/firebase/config";
 import { signInAnonymously, signInWithEmailAndPassword } from "firebase/auth";
-import { collection, onSnapshot, query, orderBy, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, getDocs, where } from "firebase/firestore";
+import RestaurantDetailsClient from "./[id]/RestaurantDetailsClient";
+import { Suspense } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & Mock Data
@@ -177,25 +179,36 @@ const RESTAURANTS: Restaurant[] = [
 // Page Component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function RestaurantListingPage() {
+function RestaurantListingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const restaurantId = searchParams ? searchParams.get("id") : null;
 
-  // ── States ─────────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCuisine, setSelectedCuisine] = useState("All");
   const [sortBy, setSortBy] = useState<"rating" | "deliveryTime" | "none">("none");
   const [firestoreRestaurants, setFirestoreRestaurants] = useState<Restaurant[]>([]);
 
-  React.useEffect(() => {
-    let unsubscribeRestaurants = () => {};
 
-    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+
+  React.useEffect(() => {
+    let unsubscribeRestaurants: (() => void) | null = null;
+
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (unsubscribeRestaurants) {
+        unsubscribeRestaurants();
+        unsubscribeRestaurants = null;
+      }
+
       if (!user) {
         setFirestoreRestaurants([]);
         return;
       }
 
-      const q = query(collection(db, "restaurants"), orderBy("rating", "desc"));
+      const q = query(
+        collection(db, "restaurants"),
+        where("status", "==", "approved")
+      );
       unsubscribeRestaurants = onSnapshot(q, async (snap) => {
         const restaurantPromises = snap.docs.map(async (docSnap) => {
           const data = docSnap.data();
@@ -232,6 +245,7 @@ export default function RestaurantListingPage() {
           };
         });
         const mapped = await Promise.all(restaurantPromises);
+        mapped.sort((a, b) => b.rating - a.rating);
         setFirestoreRestaurants(mapped);
       }, (err) => {
         console.error("Error with restaurants onSnapshot subscription:", err);
@@ -240,7 +254,9 @@ export default function RestaurantListingPage() {
 
     return () => {
       unsubscribeAuth();
-      unsubscribeRestaurants();
+      if (unsubscribeRestaurants) {
+        unsubscribeRestaurants();
+      }
     };
   }, []);
 
@@ -293,6 +309,14 @@ export default function RestaurantListingPage() {
     setSelectedCuisine("All");
     setSortBy("none");
   };
+
+  if (restaurantId) {
+    return (
+      <Suspense fallback={<div>Loading restaurant details...</div>}>
+        <RestaurantDetailsClient params={{ id: restaurantId }} />
+      </Suspense>
+    );
+  }
 
   return (
     <main className={styles.page}>
@@ -408,8 +432,8 @@ export default function RestaurantListingPage() {
                 className={styles.restaurantCard}
                 onClick={() => {
                   const url = searchQuery
-                    ? `/restaurant/${restaurant.id}?search=${encodeURIComponent(searchQuery)}`
-                    : `/restaurant/${restaurant.id}`;
+                    ? `/restaurant?id=${restaurant.id}&search=${encodeURIComponent(searchQuery)}`
+                    : `/restaurant?id=${restaurant.id}`;
                   router.push(url);
                 }}
                 role="button"
@@ -489,5 +513,13 @@ export default function RestaurantListingPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function RestaurantListingPage() {
+  return (
+    <Suspense fallback={<div>Loading restaurants...</div>}>
+      <RestaurantListingContent />
+    </Suspense>
   );
 }

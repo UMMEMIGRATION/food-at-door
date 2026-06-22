@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
 import { sendPasswordReset } from "@/lib/firebase";
 import styles from "./login.module.css";
@@ -102,7 +103,7 @@ export default function ForgotPasswordPage() {
           )}
 
           <p className={styles.footerNote} style={{ marginTop: "24px" }}>
-            Remember your password? <a href="/login">Sign In</a>
+            Remember your password? <Link href="/login">Sign In</Link>
           </p>
         </div>
       </div>

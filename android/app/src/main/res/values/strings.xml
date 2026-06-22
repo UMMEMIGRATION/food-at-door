@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FoodAtDoor</string>
+    <string name="title_activity_main">FoodAtDoor</string>
+    <string name="package_name">com.foodatdoor.customer</string>
+    <string name="custom_url_scheme">com.foodatdoor.customer</string>
+    <string name="server_client_id">1000832072653-kpdnnh3kaiqkfeimudsvn84u7f0fo47v.apps.googleusercontent.com</string>
+</resources>

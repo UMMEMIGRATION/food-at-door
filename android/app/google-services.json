@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1000832072653",
+    "project_id": "food-at-door-b85bc",
+    "storage_bucket": "food-at-door-b85bc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1000832072653:android:1a1a2ba1a1412a0b8e2284",
+        "android_client_info": {
+          "package_name": "com.foodatdoor.customer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1000832072653-f8oej1n7p79gkcq9rrg1e35nts62gaif.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.foodatdoor.customer",
+            "certificate_hash": "06497b3aabe0b684cdede2d29fe982059f8d16ef"
+          }
+        },
+        {
+          "client_id": "1000832072653-kpdnnh3kaiqkfeimudsvn84u7f0fo47v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrdvC6A0mxeWBz67Jaje-95_a1oiydSP8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1000832072653-kpdnnh3kaiqkfeimudsvn84u7f0fo47v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

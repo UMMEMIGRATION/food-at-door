@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Search, MapPin, ChevronDown, Bell } from "lucide-react";
+import { Search, MapPin, ChevronDown, Bell, Heart } from "lucide-react";
 import styles from "./home.module.css";
 
 interface HomeHeaderProps {
@@ -9,6 +9,7 @@ interface HomeHeaderProps {
   onLocationClick?: () => void;
   onSearchClick?: () => void;
   onNotificationClick?: () => void;
+  onFavoritesClick?: () => void;
 }
 
 export default function HomeHeader({
@@ -16,6 +17,7 @@ export default function HomeHeader({
   onLocationClick,
   onSearchClick,
   onNotificationClick,
+  onFavoritesClick,
 }: HomeHeaderProps) {
   return (
     <header className={styles.header}>
@@ -52,6 +54,9 @@ export default function HomeHeader({
       <div className={styles.headerActions}>
         <button className={styles.iconBtn} onClick={onSearchClick} aria-label="Search food or restaurants">
           <Search size={18} />
+        </button>
+        <button className={styles.iconBtn} onClick={onFavoritesClick} aria-label="View favorites">
+          <Heart size={18} style={{ color: "#FF6B35" }} />
         </button>
         <button className={styles.iconBtn} onClick={onNotificationClick} aria-label="View notifications">
           <Bell size={18} />

@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import styles from "./cart.module.css";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, limit, query, where } from "firebase/firestore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page Component
@@ -25,34 +27,60 @@ export default function CartPage() {
 
   // ── Pre-fill Cart on initial mount if empty (for demonstration) ──────────────
   useEffect(() => {
-    if (items.length === 0) {
-      // Mock items to populate
-      const demoItems = [
-        {
-          id: "r1_m1",
-          name: "Special Chicken Biryani",
-          price: 380,
-          emoji: "🍛",
-          description: "Fragrant basmati rice layered with succulent chicken, saffron, and traditional spices.",
-          restaurantId: "r1",
-          restaurantName: "Paradise Biryani",
-        },
-        {
-          id: "r3_m1",
-          name: "Niloufer Special Tea",
-          price: 50,
-          emoji: "☕",
-          description: "Rich, creamy, and aromatic Hyderabadi Irani Chai.",
-          restaurantId: "r3",
-          restaurantName: "Cafe Niloufer",
+    const prefillCart = async () => {
+      const isCleared = localStorage.getItem("fad_cart_cleared") === "true";
+      const savedItemsStr = localStorage.getItem("fad_cart_items");
+      const savedItems = savedItemsStr ? JSON.parse(savedItemsStr) : [];
+
+      if (isCleared || savedItems.length > 0 || items.length > 0) {
+        return;
+      }
+      if (items.length === 0) {
+        let realRestaurantId = "r1";
+        let realRestaurantName = "Paradise Biryani";
+        try {
+          const q = query(
+            collection(db, "restaurants"),
+            where("status", "==", "approved"),
+            limit(1)
+          );
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            realRestaurantId = snap.docs[0].id;
+            realRestaurantName = snap.docs[0].data().name || "Paradise Biryani";
+          }
+        } catch (e) {
+          console.error("Error fetching real restaurant for cart prefill:", e);
         }
-      ];
-      
-      // Load them into Zustand store
-      demoItems.forEach(item => addItem(item));
-      // Give the first item an extra quantity to look more realistic
-      updateQuantity("r1_m1", 2);
-    }
+
+        const demoItems = [
+          {
+            id: realRestaurantId + "_m1",
+            name: "Special Chicken Biryani",
+            price: 380,
+            emoji: "🍛",
+            description: "Fragrant basmati rice layered with succulent chicken, saffron, and traditional spices.",
+            restaurantId: realRestaurantId,
+            restaurantName: realRestaurantName,
+          },
+          {
+            id: realRestaurantId + "_m2",
+            name: "Niloufer Special Tea",
+            price: 50,
+            emoji: "☕",
+            description: "Rich, creamy, and aromatic Hyderabadi Irani Chai.",
+            restaurantId: realRestaurantId,
+            restaurantName: realRestaurantName,
+          }
+        ];
+        
+        // Load them into Zustand store
+        demoItems.forEach(item => addItem(item));
+        // Give the first item an extra quantity to look more realistic
+        updateQuantity(realRestaurantId + "_m1", 2);
+      }
+    };
+    prefillCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -78,9 +106,7 @@ export default function CartPage() {
 
   // ── Checkout handler ───────────────────────────────────────────────────────
   const handleCheckout = () => {
-    alert("🎉 Order placed successfully! Proceeding to mock payment gateway...");
-    clearCart();
-    router.push("/");
+    router.push("/checkout");
   };
 
   return (
@@ -134,9 +160,20 @@ export default function CartPage() {
                 <div key={item.id} className={styles.cartCard}>
                   {/* Food item image wrap */}
                   <div className={styles.imageWrap}>
-                    <span className={styles.emoji} role="img" aria-label={item.name}>
-                      {item.emoji}
-                    </span>
+                    {item.emoji && (item.emoji.startsWith("http") || item.emoji.startsWith("data:image")) ? (
+                      <img 
+                        src={item.emoji} 
+                        alt={item.name} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <span className={styles.emoji} role="img" aria-label={item.name}>
+                        {item.emoji || "🍔"}
+                      </span>
+                    )}
                   </div>
 
                   {/* Food item name & restaurant info */}

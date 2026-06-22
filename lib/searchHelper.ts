@@ -2,6 +2,7 @@ export interface MenuItem {
   name: string;
   category: string;
   description: string;
+  price?: number;
 }
 
 export interface SearchRestaurant {
