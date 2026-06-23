@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -12,6 +12,7 @@ import {
   Briefcase, 
   MapPin 
 } from "lucide-react";
+import { getUser, updateUser, onAuthChange } from "@/lib/firebase";
 import styles from "./addresses.module.css";
 
 interface Address {
@@ -22,34 +23,40 @@ interface Address {
   city: string;
   state: string;
   pincode: string;
+  lat: number;
+  lng: number;
 }
-
-const INITIAL_ADDRESSES: Address[] = [
-  {
-    id: "addr-1",
-    label: "Home",
-    line1: "Flat 304, Srinivasa Heights",
-    line2: "Ayyappa Society, Madhapur",
-    city: "Hyderabad",
-    state: "Telangana",
-    pincode: "500081"
-  },
-  {
-    id: "addr-2",
-    label: "Work",
-    line1: "Phase 2, T-Hub building",
-    line2: "Inorbit Mall Road, Madhapur",
-    city: "Hyderabad",
-    state: "Telangana",
-    pincode: "500081"
-  }
-];
 
 export default function AddressManagementPage() {
   const router = useRouter();
   
-  const [addresses, setAddresses] = useState<Address[]>(INITIAL_ADDRESSES);
-  const [defaultId, setDefaultId] = useState<string>("addr-1");
+  const [uid, setUid] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [defaultId, setDefaultId] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        setUid(firebaseUser.uid);
+        try {
+          const userDetails = await getUser(firebaseUser.uid);
+          if (userDetails) {
+            setAddresses((userDetails.addresses as Address[]) || []);
+            setDefaultId(userDetails.defaultAddressId || "");
+          }
+        } catch (err) {
+          console.error("Failed to load user addresses:", err);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        router.push("/login");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
   
   // Form & Editing state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -85,24 +92,31 @@ export default function AddressManagementPage() {
     setIsFormOpen(true);
   };
 
-  const handleSaveAddress = () => {
+  const handleSaveAddress = async () => {
     if (!line1 || !pincode) {
       alert("Please fill in the building line and pincode details.");
       return;
     }
 
+    if (!uid) {
+      alert("You must be logged in to modify addresses.");
+      return;
+    }
+
+    let updatedAddresses: Address[] = [];
     if (editingAddress) {
       // Edit
-      setAddresses(prev => prev.map(addr => addr.id === editingAddress.id ? {
+      updatedAddresses = addresses.map(addr => addr.id === editingAddress.id ? {
         ...addr,
         label,
         line1,
         line2,
         city,
         state,
-        pincode
-      } : addr));
-      alert("✅ Address updated successfully!");
+        pincode,
+        lat: addr.lat || 17.4483,
+        lng: addr.lng || 78.3741
+      } : addr);
     } else {
       // Add
       const newAddr: Address = {
@@ -112,27 +126,59 @@ export default function AddressManagementPage() {
         line2,
         city,
         state,
-        pincode
+        pincode,
+        lat: 17.4483,
+        lng: 78.3741
       };
-      setAddresses(prev => [...prev, newAddr]);
-      alert("✅ New address added!");
+      updatedAddresses = [...addresses, newAddr];
     }
-    setIsFormOpen(false);
+
+    try {
+      await updateUser(uid, { addresses: updatedAddresses });
+      setAddresses(updatedAddresses);
+      alert(editingAddress ? "✅ Address updated successfully!" : "✅ New address added!");
+      setIsFormOpen(false);
+    } catch (err) {
+      console.error("Failed to save address:", err);
+      alert("❌ Failed to save address details.");
+    }
   };
 
-  const handleDeleteAddress = (id: string, e: React.MouseEvent) => {
+  const handleDeleteAddress = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!uid) return;
+
     if (confirm("Are you sure you want to delete this address?")) {
-      setAddresses(prev => prev.filter(addr => addr.id !== id));
+      const updated = addresses.filter(addr => addr.id !== id);
+      const updates: any = { addresses: updated };
       if (defaultId === id) {
-        setDefaultId("");
+        updates.defaultAddressId = "";
+      }
+
+      try {
+        await updateUser(uid, updates);
+        setAddresses(updated);
+        if (defaultId === id) {
+          setDefaultId("");
+        }
+        alert("✅ Address deleted successfully!");
+      } catch (err) {
+        console.error("Failed to delete address:", err);
+        alert("❌ Failed to delete address.");
       }
     }
   };
 
-  const handleSelectDefault = (id: string) => {
-    setDefaultId(id);
-    alert("📍 Default delivery address updated!");
+  const handleSelectDefault = async (id: string) => {
+    if (!uid) return;
+    try {
+      await updateUser(uid, { defaultAddressId: id });
+      setDefaultId(id);
+      alert("📍 Default delivery address updated!");
+    } catch (err) {
+      console.error("Failed to set default address:", err);
+      alert("❌ Failed to set default delivery address.");
+    }
   };
 
   const getEmoji = (lbl: string) => {
@@ -140,6 +186,14 @@ export default function AddressManagementPage() {
     if (lbl === "Work") return "💼";
     return "📍";
   };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "#0F172A", color: "#F8FAFC" }}>
+        Loading saved addresses...
+      </div>
+    );
+  }
 
   return (
     <main className={styles.page}>

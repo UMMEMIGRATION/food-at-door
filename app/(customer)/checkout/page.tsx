@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -17,6 +17,7 @@ import {
 import { useCartStore } from "@/store/useCartStore";
 import styles from "./checkout.module.css";
 import { auth, db } from "@/lib/firebase";
+import { onAuthChange, getUser } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,22 +39,39 @@ export default function CheckoutPage() {
   const { items, clearCart } = useCartStore();
 
   // ── Address State ──────────────────────────────────────────────────────────
-  const [addresses, setAddresses] = useState<Address[]>([
-    {
-      id: "a1",
-      tag: "Home 🏠",
-      text: "Flat 304, Srinivasa Heights, Madhapur, Hyderabad - 500081",
-    },
-    {
-      id: "a2",
-      tag: "Office 🏢",
-      text: "Building 12, Mindspace IT Park, Gachibowli, Hyderabad - 500032",
-    }
-  ]);
-  const [selectedAddressId, setSelectedAddressId] = useState("a1");
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [newAddressTag, setNewAddressTag] = useState("");
   const [newAddressText, setNewAddressText] = useState("");
+  const [addressesLoading, setAddressesLoading] = useState(true);
+
+  // ── Load addresses from Firestore ─────────────────────────────────────────
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userDetails = await getUser(firebaseUser.uid);
+          if (userDetails && Array.isArray(userDetails.addresses) && userDetails.addresses.length > 0) {
+            const firestoreAddresses: Address[] = userDetails.addresses.map((addr: any) => ({
+              id: addr.id || `a_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+              tag: addr.label ? `${addr.label} ${addr.label === "Home" ? "🏠" : addr.label === "Work" ? "🏢" : "📍"}` : "Address 📍",
+              text: [addr.line1, addr.line2, addr.city, addr.state, addr.pincode].filter(Boolean).join(", "),
+            }));
+            setAddresses(firestoreAddresses);
+            // Auto-select the first address or the default one
+            const defaultId = userDetails.defaultAddressId || firestoreAddresses[0]?.id || "";
+            const matchingAddr = firestoreAddresses.find(a => a.id === defaultId);
+            setSelectedAddressId(matchingAddr ? matchingAddr.id : firestoreAddresses[0]?.id || "");
+          }
+        } catch (err) {
+          console.error("[Checkout] Failed to load addresses from Firestore:", err);
+        }
+      }
+      setAddressesLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // ── Payment State ──────────────────────────────────────────────────────────
   const [paymentType, setPaymentType] = useState<"ONLINE" | "COD">("ONLINE");
@@ -205,18 +223,13 @@ export default function CheckoutPage() {
       console.warn("Failed to retrieve extra restaurant address details:", e);
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      alert("❌ Configuration Error: Google Maps API key is missing. Please contact system administrator.");
-      return;
-    }
-
     // Convert customer address text to coordinates using Google Maps Geocoder API
     let customerLatitude = restaurantLat;
     let customerLongitude = restaurantLng;
     const addressToGeocode = selectedAddress?.text || "";
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-    if (addressToGeocode) {
+    if (addressToGeocode && apiKey && apiKey !== "your_google_maps_api_key") {
       try {
         const response = await fetch(
           `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addressToGeocode)}&key=${apiKey}`
@@ -233,6 +246,8 @@ export default function CheckoutPage() {
       } catch (err) {
         console.error("[Checkout Geocode Error] Failed geocoding customer address:", err);
       }
+    } else if (!apiKey || apiKey === "your_google_maps_api_key") {
+      console.warn("[Checkout] Google Maps API key not configured, using restaurant coordinates for delivery location");
     }
 
     const orderData = {
@@ -262,11 +277,17 @@ export default function CheckoutPage() {
         image: item.emoji || "🍔"
       })),
       subtotal,
+      foodAmount: subtotal,
       deliveryFee,
       tax: taxAndCharges,
+      taxAmount: taxAndCharges,
       platformFee: taxAndCharges, // Compatibility mapping
       grandTotal,
       total: grandTotal,          // Compatibility mapping
+      platformRestaurantCommission: parseFloat((subtotal * 0.08).toFixed(2)),
+      restaurantEarning: parseFloat((subtotal * 0.92).toFixed(2)),
+      platformDeliveryCommission: parseFloat((deliveryFee * 0.15).toFixed(2)),
+      driverEarning: parseFloat((deliveryFee * 0.85).toFixed(2)),
       paymentMethod: paymentType === "COD" ? "COD" : "ONLINE",
       paymentStatus: paymentType === "COD" ? "Pending" : "Paid",
       status: "pending",
