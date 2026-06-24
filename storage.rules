@@ -25,7 +25,7 @@ service firebase.storage {
     }
 
     // Default driver uploads
-    match /drivers/{userId}/{fileName} {
+    match /drivers/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if isSignedIn() && request.auth.uid == userId;
     }
