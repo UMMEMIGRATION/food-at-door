@@ -53,6 +53,7 @@ export default function OrderHistoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "delivered" | "cancelled">("all");
   const [orders, setOrders] = useState<Order[]>([]);
+  const [refunds, setRefunds] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   
   const { clearCart, addItem, updateQuantity } = useCartStore();
@@ -61,6 +62,7 @@ export default function OrderHistoryPage() {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (!user) {
         setOrders([]);
+        setRefunds({});
         setLoading(false);
         return;
       }
@@ -136,14 +138,66 @@ export default function OrderHistoryPage() {
         setLoading(false);
       });
 
-      return () => unsubscribeSnap();
+      const qRefunds = query(
+        collection(db, "refundRequests"),
+        where("customerId", "==", user.uid)
+      );
+      const unsubscribeRefunds = onSnapshot(qRefunds, (refundSnap) => {
+        const refundMap: Record<string, any> = {};
+        refundSnap.forEach((doc) => {
+          const refundData = doc.data();
+          const existing = refundMap[refundData.orderId];
+          if (!existing || (refundData.timestamp?.seconds || 0) > (existing.timestamp?.seconds || 0)) {
+            refundMap[refundData.orderId] = refundData;
+          }
+        });
+        setRefunds(refundMap);
+      });
+
+      return () => {
+        unsubscribeSnap();
+        unsubscribeRefunds();
+      };
     });
 
     return () => unsubscribeAuth();
   }, []);
 
+  const enrichedOrders = useMemo(() => {
+    return orders.map(order => {
+      const refund = refunds[order.id];
+      if (refund) {
+        let statusText = order.statusText;
+        let status = order.status;
+        
+        if (refund.status === 'Completed' || refund.status === 'Refunded') {
+          statusText = `Refund Completed (₹${refund.amount})`;
+          status = 'cancelled';
+        } else if (refund.status === 'Approved') {
+          statusText = `Refund Approved (₹${refund.amount})`;
+          status = 'cancelled';
+        } else if (refund.status === 'Pending' || refund.status === 'Under Admin Review') {
+          statusText = `Refund Pending (₹${refund.amount})`;
+          status = 'cancelled';
+        } else if (refund.status === 'Rejected') {
+          statusText = `Refund Rejected`;
+          status = 'cancelled';
+        }
+        
+        return {
+          ...order,
+          statusText,
+          refundStatus: refund.status,
+          refundAmount: refund.amount,
+          refundUpdatedAt: refund.updatedAt || refund.createdAt
+        };
+      }
+      return order;
+    });
+  }, [orders, refunds]);
+
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
+    return enrichedOrders.filter((order) => {
       const matchesSearch = 
         order.restaurantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -152,7 +206,7 @@ export default function OrderHistoryPage() {
       
       return matchesSearch && matchesFilter;
     });
-  }, [orders, searchQuery, filter]);
+  }, [enrichedOrders, searchQuery, filter]);
 
   const handleReorder = (order: Order) => {
     // 1. Clear cart
@@ -268,9 +322,11 @@ export default function OrderHistoryPage() {
                     ${styles.statusPill}
                     ${order.status === "active" ? styles.statusActive : ""}
                     ${order.status === "delivered" ? styles.statusDelivered : ""}
-                    ${order.status === "cancelled" ? styles.statusCancelled : ""}
-                  `}>
-                    {order.statusText}
+                    ${(order as any).refundStatus === "Completed" ? styles.statusDelivered : (order.status === "cancelled" ? styles.statusCancelled : "")}
+                  `}
+                  style={(order as any).refundStatus === "Completed" ? { backgroundColor: "rgba(16, 185, 129, 0.1)", color: "#10B981", border: "1px solid rgba(16, 185, 129, 0.3)" } : {}}
+                  >
+                    {(order as any).refundStatus === "Completed" ? "REFUNDED" : order.statusText}
                   </span>
                 </div>
 
@@ -282,6 +338,13 @@ export default function OrderHistoryPage() {
                       </div>
                     ))}
                   </div>
+
+                  {(order as any).refundStatus === "Completed" && (
+                    <div style={{ marginTop: "8px", padding: "8px", borderRadius: "8px", backgroundColor: "rgba(16, 185, 129, 0.05)", border: "1px solid rgba(16, 185, 129, 0.15)", fontSize: "11px", color: "#A7F3D0" }}>
+                      <div>💰 Refunded Amount: ₹{(order as any).refundAmount}</div>
+                      <div style={{ color: "#9CA3AF", marginTop: "2px" }}>Completed: {(order as any).refundUpdatedAt}</div>
+                    </div>
+                  )}
 
                   <div style={{ marginTop: "10px", fontSize: "11px", color: "#9CA3AF", display: "flex", justifyContent: "space-between", borderTop: "1px dashed rgba(255,255,255,0.06)", paddingTop: "8px" }}>
                     <span>Payment: {order.paymentMethod === "COD" ? "💵 Cash on Delivery" : "💳 Online Payment"}</span>
