@@ -14,7 +14,8 @@ import {
   Navigation,
   CheckCircle2,
   XCircle,
-  Clock
+  Clock,
+  Receipt
 } from "lucide-react";
 import styles from "./orders.module.css";
 import { auth, db } from "@/lib/firebase";
@@ -240,7 +241,12 @@ export default function OrderHistoryPage() {
         ) : (
           <div className={styles.orderList}>
             {filteredOrders.map((order) => (
-              <div key={order.id} className={styles.orderCard}>
+              <div 
+                key={order.id} 
+                className={styles.orderCard}
+                onClick={() => router.push(`/orders/track?id=${order.id}`)}
+                style={{ cursor: "pointer" }}
+              >
                 <div className={styles.cardHeader}>
                   {order.image && (order.image.startsWith("http") || order.image.startsWith("data:image")) ? (
                     <img 
@@ -293,20 +299,29 @@ export default function OrderHistoryPage() {
                 <div className={styles.cardActions}>
                   {order.status === "active" ? (
                     <button 
-                      onClick={() => router.push(`/orders/track?id=${order.id}`)}
+                      onClick={(e) => { e.stopPropagation(); router.push(`/orders/track?id=${order.id}`); }}
                       className={styles.trackBtn}
                     >
                       <Navigation size={14} fill="#fff" />
                       <span>Track Live Order</span>
                     </button>
                   ) : (
-                    <button 
-                      onClick={() => handleReorder(order)}
-                      className={styles.reorderBtn}
-                    >
-                      <RotateCcw size={14} />
-                      <span>Reorder</span>
-                    </button>
+                    <>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); router.push(`/orders/track?id=${order.id}`); }}
+                        className={styles.reorderBtn}
+                      >
+                        <Receipt size={14} />
+                        <span>View Details</span>
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleReorder(order); }}
+                        className={styles.reorderBtn}
+                      >
+                        <RotateCcw size={14} />
+                        <span>Reorder</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

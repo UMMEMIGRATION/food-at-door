@@ -11,11 +11,16 @@ import {
   Check, 
   Clock, 
   ChevronRight,
-  Info
+  Info,
+  MessageSquare,
+  X,
+  Send,
+  Receipt,
+  Upload
 } from "lucide-react";
 import styles from "./tracking.module.css";
-import { db } from "@/lib/firebase";
-import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
+import { db, auth, onAuthChange, uploadImage } from "@/lib/firebase";
+import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, orderBy, setDoc, addDoc, increment, where } from "firebase/firestore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -51,12 +56,100 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
   const [loading, setLoading] = useState(true);
   const [driverLoc, setDriverLoc] = useState<any>(null);
 
+  // Chat Support States
+  const [userUid, setUserUid] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("Customer");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatText, setChatText] = useState("");
+  const [supportMessages, setSupportMessages] = useState<any[]>([]);
+  const [supportChatDoc, setSupportChatDoc] = useState<any>(null);
+  const [unreadAdminCount, setUnreadAdminCount] = useState(0);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // Refund States
+  const [isRefundOpen, setIsRefundOpen] = useState(false);
+  const [refundType, setRefundType] = useState<'Full' | 'Partial'>('Full');
+  const [refundItems, setRefundItems] = useState<number[]>([]);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundPhoto, setRefundPhoto] = useState<File | null>(null);
+  const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
+  const [activeRefund, setActiveRefund] = useState<any>(null);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCurrentUrl(window.location.href);
       setSearchParamsVal(window.location.search);
     }
   }, []);
+
+  // Auth state listener
+  useEffect(() => {
+    const unsub = onAuthChange((user) => {
+      if (user) {
+        setUserUid(user.uid);
+        setUserName(user.displayName || "Customer");
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // Listen to active refund request for this order
+  useEffect(() => {
+    if (!orderDocId) return;
+    const q = query(collection(db, "refundRequests"), where("orderId", "==", orderDocId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const docs = snapshot.docs.map(d => d.data());
+        docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        setActiveRefund(docs[0]);
+      } else {
+        setActiveRefund(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [orderDocId]);
+
+  // Chat listeners
+  useEffect(() => {
+    if (!userUid) return;
+
+    // Listen to parent doc
+    const chatDocRef = doc(db, 'customerSupportChats', userUid);
+    const unsubDoc = onSnapshot(chatDocRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setSupportChatDoc(data);
+        setUnreadAdminCount(data.unreadCountForCustomer || 0);
+      }
+    });
+
+    // Listen to messages
+    const q = query(collection(db, 'customerSupportChats', userUid, 'messages'), orderBy('timestamp', 'asc'));
+    const unsubMsgs = onSnapshot(q, (snap) => {
+      const msgs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSupportMessages(msgs);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+
+      // Auto-mark read if chat is open
+      if (isChatOpen) {
+        msgs.forEach(async (m: any) => {
+          if (m.sender === 'admin' && !m.read) {
+            try {
+              await updateDoc(doc(db, 'customerSupportChats', userUid, 'messages', m.id), { read: true });
+            } catch (err) {}
+          }
+        });
+        if (unreadAdminCount > 0) {
+          updateDoc(chatDocRef, { unreadCountForCustomer: 0 }).catch(() => {});
+        }
+      }
+    });
+
+    return () => {
+      unsubDoc();
+      unsubMsgs();
+    };
+  }, [userUid, isChatOpen]);
 
   useEffect(() => {
     if (!orderDocId) {
@@ -196,14 +289,94 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
     alert(`📞 Initiating call to Delivery Agent: ${dbOrder?.driverName || "Ramesh Kumar"} (+91 98765 43210)`);
   };
 
-  const handleContactSupport = () => {
-    alert("💬 Initiating live chat support connection for Order " + orderId);
+  const handleContactSupport = async () => {
+    if (!userUid) {
+      alert("Please log in to use support.");
+      return;
+    }
+    
+    setIsChatOpen(true);
+    
+    // Auto-mark existing unread messages as read
+    if (unreadAdminCount > 0) {
+      try {
+        await updateDoc(doc(db, 'customerSupportChats', userUid), { unreadCountForCustomer: 0 });
+      } catch (err) {}
+    }
+
+    // Create or update ticket
+    try {
+      const chatDocRef = doc(db, 'customerSupportChats', userUid);
+      await setDoc(chatDocRef, {
+        orderId: orderId,
+        customerName: userName,
+        isOnline: true,
+        lastActive: serverTimestamp(),
+        // Keep status 'waiting' if it's new or closed, don't overwrite if 'connected'
+        ...(supportChatDoc?.status !== 'connected' ? { status: 'waiting' } : {})
+      }, { merge: true });
+    } catch (err) {
+      console.error("Error creating support ticket:", err);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!userUid || !chatText.trim()) return;
+    
+    const textToSend = chatText;
+    setChatText('');
+    
+    try {
+      // 1. Add message
+      const msgRef = doc(collection(db, 'customerSupportChats', userUid, 'messages'));
+      await setDoc(msgRef, {
+        sender: 'customer',
+        text: textToSend,
+        timestamp: serverTimestamp(),
+        read: false
+      });
+      
+      // 2. Update parent
+      const chatDocRef = doc(db, 'customerSupportChats', userUid);
+      await setDoc(chatDocRef, {
+        lastMessageText: textToSend,
+        lastMessageTimestamp: serverTimestamp(),
+        unreadCountForAdmin: increment(1)
+      }, { merge: true });
+      
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
   };
 
   const handleCancelOrder = async () => {
     if (confirm("Are you sure you want to cancel this order?")) {
       try {
         if (!orderDocId) return;
+
+        if (dbOrder?.paymentMethod !== 'COD' && dbOrder?.paymentStatus === 'Paid') {
+          const isBeforeAccept = activeStep < 1;
+          const refId = 'refund_cancel_' + Date.now();
+          const autoStatus = isBeforeAccept ? 'Approved' : 'Under Admin Review';
+          
+          await setDoc(doc(db, 'refundRequests', refId), {
+            id: refId,
+            orderId: orderDocId,
+            customerId: userUid,
+            customerName: userName,
+            restaurantId: dbOrder.restaurantId || '',
+            amount: dbOrder.grandTotal || dbOrder.total || 0,
+            type: 'Full',
+            reason: 'Order Cancelled by Customer',
+            evidenceUrl: '',
+            items: dbOrder.items || [],
+            status: autoStatus,
+            isCancellationRefund: true,
+            createdAt: new Date().toLocaleString(),
+            timestamp: serverTimestamp()
+          });
+        }
+
         await updateDoc(doc(db, "orders", orderDocId), {
           status: "cancelled",
           cancelledAt: serverTimestamp()
@@ -214,6 +387,75 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
         console.error("Error cancelling order:", error);
         alert(`Failed to cancel order: ${error?.message || error || "Unknown error"}`);
       }
+    }
+  };
+
+  const { canRefund, isPastRefundWindow } = useMemo(() => {
+    let allowed = false;
+    let pastWindow = false;
+    if (!dbOrder) return { canRefund: false, isPastRefundWindow: false };
+    if (['cancelled', 'rejected', 'refunded'].includes(dbOrder.status)) {
+      return { canRefund: false, isPastRefundWindow: false };
+    }
+    if (activeStep >= 1) {
+      allowed = true;
+      const deliveredAt = dbOrder.deliveredAt || dbOrder.updatedAt || dbOrder.createdAt;
+      if (dbOrder.status === 'delivered' && deliveredAt?.seconds) {
+        const hoursSince = (Date.now() / 1000 - deliveredAt.seconds) / 3600;
+        if (hoursSince > 12) {
+          pastWindow = true;
+        }
+      }
+    }
+    return { canRefund: allowed, isPastRefundWindow: pastWindow };
+  }, [dbOrder, activeStep]);
+
+  const submitRefundRequest = async () => {
+    if (!userUid) return alert("Please log in to request a refund.");
+    if (!refundReason.trim()) return alert("Please provide a reason for the refund.");
+    if (refundType === 'Partial' && refundItems.length === 0) return alert("Please select at least one item for partial refund.");
+    
+    setIsSubmittingRefund(true);
+    try {
+      let photoUrl = "";
+      if (refundPhoto) {
+        photoUrl = await uploadImage(`refunds/${orderDocId}_${Date.now()}`, refundPhoto);
+      }
+
+      const requestedAmount = refundType === 'Full' 
+        ? (dbOrder?.grandTotal || dbOrder?.total || 0) 
+        : refundItems.reduce((sum, idx) => sum + ((dbOrder.items[idx].price || 0) * (dbOrder.items[idx].quantity || 1)), 0);
+
+      const requestedItemsList = refundType === 'Full' 
+        ? dbOrder.items 
+        : refundItems.map(idx => dbOrder.items[idx]);
+
+      const refundId = 'ref_' + Date.now();
+      await setDoc(doc(db, 'refundRequests', refundId), {
+        id: refundId,
+        orderId: orderDocId,
+        customerId: userUid,
+        customerName: userName,
+        restaurantId: dbOrder.restaurantId || '',
+        amount: requestedAmount,
+        type: refundType,
+        reason: refundReason,
+        evidenceUrl: photoUrl,
+        items: requestedItemsList,
+        status: 'Pending',
+        createdAt: new Date().toLocaleString(),
+        timestamp: serverTimestamp()
+      });
+
+      alert("Refund request submitted successfully. It is under review.");
+      setIsRefundOpen(false);
+      setRefundReason('');
+      setRefundPhoto(null);
+      setRefundItems([]);
+    } catch (err: any) {
+      alert("Error submitting refund: " + err.message);
+    } finally {
+      setIsSubmittingRefund(false);
     }
   };
 
@@ -388,6 +630,25 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
             </div>
           </div>
 
+          {activeRefund && (
+            <div style={{
+              background: activeRefund.status === 'Approved' || activeRefund.status === 'Completed' || activeRefund.status === 'Refunded' ? 'rgba(16, 185, 129, 0.1)' : activeRefund.status === 'Rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+              border: `1px solid ${activeRefund.status === 'Approved' || activeRefund.status === 'Completed' || activeRefund.status === 'Refunded' ? 'rgba(16, 185, 129, 0.3)' : activeRefund.status === 'Rejected' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+              borderRadius: '8px',
+              padding: '12px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#FFF' }}>Refund Status: {activeRefund.status === 'Pending' || activeRefund.status === 'Under Admin Review' ? 'Refund Pending' : activeRefund.status === 'Completed' ? 'Refunded' : activeRefund.status}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>{activeRefund.isCancellationRefund ? 'Cancelled Order Refund' : 'Requested Refund'} • ₹{activeRefund.amount} • {activeRefund.createdAt}</div>
+              </div>
+              <Receipt size={20} color={activeRefund.status === 'Approved' || activeRefund.status === 'Completed' || activeRefund.status === 'Refunded' ? '#10B981' : activeRefund.status === 'Rejected' ? '#EF4444' : '#F59E0B'} />
+            </div>
+          )}
+
           <h2 className={styles.summaryHeader}>Receipt Summary</h2>
           
           {dbOrder ? (
@@ -450,9 +711,19 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
               <Phone size={14} />
               <span>Call Partner</span>
             </button>
-            <button onClick={handleContactSupport} className={styles.secondaryBtn}>
+            <button onClick={handleContactSupport} className={styles.secondaryBtn} style={{ position: 'relative' }}>
               <HelpCircle size={14} />
               <span>Support</span>
+              {unreadAdminCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: '-6px', right: '-6px',
+                  backgroundColor: '#EF4444', color: 'white', fontSize: '10px',
+                  fontWeight: 'bold', width: '18px', height: '18px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {unreadAdminCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -465,6 +736,33 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
             </button>
           )}
 
+          {canRefund && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+              <button 
+                onClick={() => setIsRefundOpen(true)} 
+                disabled={isPastRefundWindow}
+                className={styles.cancelBtn}
+                style={{ 
+                  backgroundColor: isPastRefundWindow ? '#374151' : '#1F2937', 
+                  color: isPastRefundWindow ? '#9CA3AF' : '#FFF',
+                  cursor: isPastRefundWindow ? 'not-allowed' : 'pointer',
+                  opacity: isPastRefundWindow ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Receipt size={14} style={{ marginRight: '6px' }} />
+                Request Refund
+              </button>
+              {isPastRefundWindow && (
+                <span style={{ fontSize: '11px', color: '#EF4444', textAlign: 'center', marginTop: '2px' }}>
+                  Refund requests are available for 12 hours after delivery.
+                </span>
+              )}
+            </div>
+          )}
+
           <button onClick={() => router.push("/")} className={styles.homeBtn}>
             <Home size={14} />
             <span>Go to Homepage</span>
@@ -472,6 +770,239 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
         </div>
 
       </div>
+
+      {/* ── Chat Modal ──────────────────────────────────────────────────────── */}
+      {isChatOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: '#121212', zIndex: 9999,
+          display: 'flex', flexDirection: 'column'
+        }}>
+          {/* Chat Header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '16px', backgroundColor: '#1A1A1A', borderBottom: '1px solid #333'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '50%',
+                backgroundColor: 'rgba(255,107,53,0.1)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', color: '#FF6B35'
+              }}>
+                <MessageSquare size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#FFF' }}>Live Support</h3>
+                <p style={{ margin: 0, fontSize: '12px', color: '#A1A1AA' }}>
+                  {supportChatDoc?.assignedAdminName ? `Connected to ${supportChatDoc.assignedAdminName}` : 'Connecting to an agent...'}
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsChatOpen(false)}
+              style={{ background: 'none', border: 'none', color: '#A1A1AA', padding: '8px' }}
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Chat Messages */}
+          <div style={{
+            flex: 1, padding: '16px', overflowY: 'auto',
+            display: 'flex', flexDirection: 'column', gap: '12px',
+            backgroundColor: '#000'
+          }}>
+            <div style={{
+              alignSelf: 'center', backgroundColor: '#1F2937', color: '#D1D5DB',
+              padding: '8px 16px', borderRadius: '16px', fontSize: '12px',
+              marginBottom: '16px'
+            }}>
+              Support chat initiated for Order {orderId}
+            </div>
+
+            {supportMessages.map((msg, idx) => {
+              const isMe = msg.sender === 'customer';
+              const timeStr = msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+              return (
+                <div key={idx} style={{
+                  alignSelf: isMe ? 'flex-end' : 'flex-start',
+                  maxWidth: '80%', display: 'flex', flexDirection: 'column',
+                  alignItems: isMe ? 'flex-end' : 'flex-start'
+                }}>
+                  <div style={{
+                    backgroundColor: isMe ? '#FF6B35' : '#27272A',
+                    color: '#FFF', padding: '10px 14px',
+                    borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    fontSize: '14px', lineHeight: '1.4'
+                  }}>
+                    {msg.text}
+                  </div>
+                  <span style={{ fontSize: '10px', color: '#71717A', marginTop: '4px' }}>
+                    {timeStr} {isMe && (msg.read ? '• Read' : '• Sent')}
+                  </span>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Input */}
+          <div style={{
+            padding: '16px', backgroundColor: '#1A1A1A', borderTop: '1px solid #333',
+            display: 'flex', gap: '12px', alignItems: 'center', paddingBottom: 'max(16px, env(safe-area-inset-bottom))'
+          }}>
+            <input
+              type="text"
+              value={chatText}
+              onChange={(e) => setChatText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Type your message..."
+              style={{
+                flex: 1, backgroundColor: '#27272A', border: '1px solid #3F3F46',
+                borderRadius: '24px', padding: '12px 16px', color: '#FFF',
+                fontSize: '14px', outline: 'none'
+              }}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!chatText.trim()}
+              style={{
+                width: '44px', height: '44px', borderRadius: '50%',
+                backgroundColor: chatText.trim() ? '#FF6B35' : '#3F3F46',
+                border: 'none', color: '#FFF', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                transition: 'background-color 0.2s',
+                opacity: chatText.trim() ? 1 : 0.5
+              }}
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Refund Modal ──────────────────────────────────────────────────────── */}
+      {isRefundOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#1E1E1E', borderRadius: '16px', width: '100%', maxWidth: '400px',
+            maxHeight: '90vh', overflowY: 'auto', padding: '24px', position: 'relative'
+          }}>
+            <button 
+              onClick={() => setIsRefundOpen(false)}
+              style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#A1A1AA' }}
+            >
+              <X size={24} />
+            </button>
+            <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#FFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Receipt size={24} color="#FF6B35" /> Request Refund
+            </h2>
+
+            {/* Refund Type Selection */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+              <button
+                onClick={() => setRefundType('Full')}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${refundType === 'Full' ? '#FF6B35' : '#333'}`,
+                  backgroundColor: refundType === 'Full' ? 'rgba(255,107,53,0.1)' : '#2A2A2A',
+                  color: '#FFF', fontWeight: 600, transition: 'all 0.2s'
+                }}
+              >
+                Full Order
+              </button>
+              <button
+                onClick={() => setRefundType('Partial')}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${refundType === 'Partial' ? '#FF6B35' : '#333'}`,
+                  backgroundColor: refundType === 'Partial' ? 'rgba(255,107,53,0.1)' : '#2A2A2A',
+                  color: '#FFF', fontWeight: 600, transition: 'all 0.2s'
+                }}
+              >
+                Partial Items
+              </button>
+            </div>
+
+            {/* Partial Items Checklist */}
+            {refundType === 'Partial' && dbOrder?.items && (
+              <div style={{ marginBottom: '20px', backgroundColor: '#2A2A2A', padding: '16px', borderRadius: '8px' }}>
+                <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#A1A1AA' }}>Select items to refund:</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {dbOrder.items.map((item: any, idx: number) => (
+                    <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={refundItems.includes(idx)}
+                        onChange={(e) => {
+                          if (e.target.checked) setRefundItems(prev => [...prev, idx]);
+                          else setRefundItems(prev => prev.filter(i => i !== idx));
+                        }}
+                        style={{ width: '18px', height: '18px', accentColor: '#FF6B35' }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1, color: '#FFF' }}>
+                        <span>{item.quantity}x {item.name}</span>
+                        <span>₹{(item.price || 0) * (item.quantity || 1)}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Reason */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#A1A1AA', fontSize: '14px' }}>Reason for refund</label>
+              <textarea 
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder="Please describe the issue (e.g., missing item, poor quality)..."
+                rows={3}
+                style={{
+                  width: '100%', backgroundColor: '#2A2A2A', border: '1px solid #333',
+                  borderRadius: '8px', padding: '12px', color: '#FFF', fontSize: '14px', resize: 'vertical'
+                }}
+              />
+            </div>
+
+            {/* Photo Evidence */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#A1A1AA', fontSize: '14px' }}>Photo Evidence (Optional)</label>
+              <label style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: '#2A2A2A', border: '1px dashed #555', borderRadius: '8px', padding: '20px',
+                cursor: 'pointer', transition: 'border 0.2s', color: refundPhoto ? '#FF6B35' : '#888'
+              }}>
+                <Upload size={24} style={{ marginBottom: '8px' }} />
+                <span style={{ fontSize: '14px' }}>{refundPhoto ? refundPhoto.name : "Upload a photo"}</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) setRefundPhoto(e.target.files[0]);
+                  }}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              onClick={submitRefundRequest}
+              disabled={isSubmittingRefund}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '8px', backgroundColor: '#FF6B35',
+                color: '#FFF', fontWeight: 600, border: 'none', cursor: isSubmittingRefund ? 'not-allowed' : 'pointer',
+                opacity: isSubmittingRefund ? 0.7 : 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px'
+              }}
+            >
+              {isSubmittingRefund ? "Submitting..." : "Submit Refund Request"}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

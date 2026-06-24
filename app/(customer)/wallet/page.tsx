@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Wallet, ArrowUpRight, ArrowDownLeft, Plus, Compass, Search, ShoppingBag, ClipboardList, User } from "lucide-react";
+import { auth, db, onAuthChange } from "@/lib/firebase";
+import { doc, onSnapshot, collection, query, where, updateDoc, setDoc } from "firebase/firestore";
 import styles from "./wallet.module.css";
 
 interface Transaction {
@@ -14,45 +16,114 @@ interface Transaction {
   emoji: string;
 }
 
-const INITIAL_TRANSACTIONS: Transaction[] = [
-  { id: "tx-1", name: "Loaded Money via UPI", date: "Today, 11:20 AM", amount: 500, type: "in", emoji: "💰" },
-  { id: "tx-2", name: "Paid for Order #FAD-8409", date: "Today, 04:12 PM", amount: 866, type: "out", emoji: "🍛" },
-  { id: "tx-3", name: "Cashback Received", date: "Yesterday, 06:15 PM", amount: 50, type: "in", emoji: "🎉" },
-  { id: "tx-4", name: "Paid for Order #FAD-9218", date: "08 Jun 2026, 08:32 AM", amount: 420, type: "out", emoji: "☕" }
-];
-
 export default function WalletPage() {
   const router = useRouter();
 
-  const [balance, setBalance] = useState(350); // Starting Mock Balance
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [uid, setUid] = useState<string | null>(null);
+  const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingForm, setIsLoadingForm] = useState(false);
   const [amountInput, setAmountInput] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handleAddMoney = (e: React.FormEvent) => {
+  useEffect(() => {
+    const unsubscribeAuth = onAuthChange((user) => {
+      if (!user) {
+        setUid(null);
+        setBalance(0);
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+
+      setUid(user.uid);
+
+      // 1. Listen to user document for walletBalance in real-time
+      const userRef = doc(db, "users", user.uid);
+      const unsubscribeUser = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setBalance(Number(userData.walletBalance) || 0);
+        }
+      });
+
+      // 2. Listen to refundTransactions where customerId == user.uid
+      const q = query(
+        collection(db, "refundTransactions"),
+        where("customerId", "==", user.uid)
+      );
+      
+      const unsubscribeTxs = onSnapshot(q, (snap) => {
+        const list: Transaction[] = [];
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          list.push({
+            id: docSnap.id,
+            name: data.description || "Refund Received",
+            date: data.createdAt || "Just now",
+            amount: Number(data.amount) || 0,
+            type: "in",
+            emoji: "💰"
+          });
+        });
+        
+        // Sort descending by id/timestamp
+        list.sort((a, b) => b.id.localeCompare(a.id));
+        setTransactions(list);
+        setLoading(false);
+      }, (err) => {
+        console.error("Error loading refund transactions:", err);
+        setLoading(false);
+      });
+
+      return () => {
+        unsubscribeUser();
+        unsubscribeTxs();
+      };
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  const handleAddMoney = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmt = parseFloat(amountInput);
     if (isNaN(parsedAmt) || parsedAmt <= 0) {
       alert("Please enter a valid deposit amount.");
       return;
     }
+    if (!uid) {
+      alert("Please sign in to add money.");
+      return;
+    }
 
-    // Update States
-    setBalance(prev => prev + parsedAmt);
-    
-    const newTx: Transaction = {
-      id: `tx-${Date.now()}`,
-      name: "Loaded Money to Wallet",
-      date: "Just now",
-      amount: parsedAmt,
-      type: "in",
-      emoji: "💳"
-    };
-    
-    setTransactions([newTx, ...transactions]);
-    setAmountInput("");
-    setIsLoadingForm(false);
-    alert(`✅ Success! ₹${parsedAmt} loaded to your Food At Door wallet.`);
+    setIsLoadingForm(true);
+    try {
+      const userRef = doc(db, "users", uid);
+      const newBalance = balance + parsedAmt;
+      await updateDoc(userRef, {
+        walletBalance: newBalance
+      });
+
+      // Create transaction log in refundTransactions to track the top-up
+      const txId = "tx_" + Date.now();
+      await setDoc(doc(db, "refundTransactions", txId), {
+        id: txId,
+        customerId: uid,
+        amount: parsedAmt,
+        description: "Loaded Money via UPI",
+        createdAt: new Date().toLocaleString(),
+        status: "completed"
+      });
+
+      setAmountInput("");
+      setIsLoadingForm(false);
+      alert(`✅ Success! ₹${parsedAmt} loaded to your Food At Door wallet.`);
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to load money: " + err.message);
+      setIsLoadingForm(false);
+    }
   };
 
   const handleQuickSelect = (amt: number) => {
@@ -135,30 +206,36 @@ export default function WalletPage() {
         {/* Transactions list */}
         <section>
           <h2 className={styles.sectionTitle}>Transaction History</h2>
-          <div className={styles.list}>
-            {transactions.map((tx) => (
-              <div key={tx.id} className={styles.item}>
-                <div className={styles.itemLeft}>
+          {loading ? (
+            <div style={{ color: "#888", textAlign: "center", padding: "20px" }}>Loading transaction history...</div>
+          ) : transactions.length === 0 ? (
+            <div style={{ color: "#888", textAlign: "center", padding: "20px" }}>No transactions recorded.</div>
+          ) : (
+            <div className={styles.list}>
+              {transactions.map((tx) => (
+                <div key={tx.id} className={styles.item}>
+                  <div className={styles.itemLeft}>
+                    <div className={`
+                      ${styles.itemIcon}
+                      ${tx.type === "in" ? styles.iconIn : styles.iconOut}
+                    `}>
+                      {tx.type === "in" ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                    </div>
+                    <div className={styles.itemMeta}>
+                      <span className={styles.itemName}>{tx.name}</span>
+                      <span className={styles.itemDate}>{tx.date}</span>
+                    </div>
+                  </div>
                   <div className={`
-                    ${styles.itemIcon}
-                    ${tx.type === "in" ? styles.iconIn : styles.iconOut}
+                    ${styles.itemAmount}
+                    ${tx.type === "in" ? styles.amtIn : styles.amtOut}
                   `}>
-                    {tx.type === "in" ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
-                  </div>
-                  <div className={styles.itemMeta}>
-                    <span className={styles.itemName}>{tx.name}</span>
-                    <span className={styles.itemDate}>{tx.date}</span>
+                    {tx.type === "in" ? "+" : "-"} ₹{tx.amount}
                   </div>
                 </div>
-                <div className={`
-                  ${styles.itemAmount}
-                  ${tx.type === "in" ? styles.amtIn : styles.amtOut}
-                `}>
-                  {tx.type === "in" ? "+" : "-"} ₹{tx.amount}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 

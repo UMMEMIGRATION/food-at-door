@@ -17,11 +17,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    /** Does the requesting user have the 'admin' role? */
     function isAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && (
+        request.auth.token.email == 'admin@foodatdoor.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
     }
 
     /** Does the requesting user have the 'restaurant_owner' role? */
@@ -168,11 +169,17 @@ service cloud.firestore {
       // Restaurant owners and drivers can read their own payouts
       allow read: if isSignedIn() && (
         resource.data.recipientId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
         isAdmin()
       );
 
-      // Only admin / Cloud Functions can create or update payouts
-      allow create: if isAdmin();
+      // Drivers can create their own payouts, admins can create or update any
+      allow create: if isAdmin() || (
+        isSignedIn() && (
+          request.resource.data.recipientId == request.auth.uid ||
+          request.resource.data.driverId == request.auth.uid
+        )
+      );
       allow update: if isAdmin();
       allow delete: if false;
     }
@@ -261,6 +268,29 @@ service cloud.firestore {
     match /rechargeHistory/{id} {
       allow read: if isSignedIn() && (resource.data.driverId == request.auth.uid || request.auth.uid == id) || isAdmin();
       allow write: if isSignedIn() && (request.resource.data.driverId == request.auth.uid || request.auth.uid == id) || isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // refundRequests collection
+    // -----------------------------------------------------------------------
+    match /refundRequests/{requestId} {
+      allow read: if isAdmin() ||
+                  (isSignedIn() && resource.data.customerId == request.auth.uid) ||
+                  (isSignedIn() && isRestaurantOwner(resource.data.restaurantId));
+                  
+      allow create: if isAdmin() ||
+                    (isSignedIn() && request.resource.data.customerId == request.auth.uid);
+                    
+      allow update: if isAdmin() ||
+                    (isSignedIn() && isRestaurantOwner(resource.data.restaurantId));
+    }
+
+    // -----------------------------------------------------------------------
+    // refundTransactions collection
+    // -----------------------------------------------------------------------
+    match /refundTransactions/{txId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow create, update: if isAdmin();
     }
 
     // -----------------------------------------------------------------------

@@ -221,7 +221,7 @@ export default function ProfilePage() {
           </button>
 
           <button 
-            onClick={() => alert("💳 Payment Methods: UPI, Cards & Netbanking options.")}
+            onClick={() => router.push("/profile/payment-methods")}
             className={styles.menuItem}
           >
             <div className={styles.menuItemLeft}>
