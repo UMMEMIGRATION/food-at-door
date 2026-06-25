@@ -295,7 +295,8 @@ export default function CustomerHomePage() {
             distance: `${data.distance || (1.5 + Math.random() * 3).toFixed(1)} km`,
             avgPrice: `₹${data.minOrder || 200} for one`,
             emoji: data.logo || "🍽️",
-            isOpen: data.isOpen !== undefined ? data.isOpen : true,
+            isOpen: (data.isOpen !== undefined ? data.isOpen : true) && (data.isOnline !== undefined ? data.isOnline : true),
+            isOnline: data.isOnline !== undefined ? data.isOnline : true,
             promo: data.promo || "",
             city: data.address?.city || "Hyderabad"
           };
@@ -587,6 +588,10 @@ export default function CustomerHomePage() {
                 <div 
                   key={restaurant.id} 
                   onClick={() => {
+                    if (!restaurant.isOpen) {
+                      alert("This restaurant is currently closed or offline and not accepting orders.");
+                      return;
+                    }
                     console.log("[Restaurant Navigation] Tapped restaurant card ID:", restaurant.id, "Name:", restaurant.name);
                     const url = searchQuery 
                       ? `/restaurant?id=${restaurant.id}&search=${encodeURIComponent(searchQuery)}`
@@ -595,7 +600,7 @@ export default function CustomerHomePage() {
                     router.push(url);
                   }}
                   className={styles.restaurantCard} 
-                  style={{ opacity: restaurant.isOpen ? 1 : 0.6, cursor: "pointer" }}
+                  style={{ opacity: restaurant.isOpen ? 1 : 0.6, cursor: restaurant.isOpen ? "pointer" : "not-allowed" }}
                 >
                   <div className={styles.cardImageWrap}>
                     {restaurant.emoji && (restaurant.emoji.startsWith("http") || restaurant.emoji.startsWith("data:image")) && 

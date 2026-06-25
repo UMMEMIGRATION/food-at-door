@@ -41,6 +41,8 @@ interface Restaurant {
   costForOne: number; // in INR
   emoji: string;
   promo?: string;
+  isOpen?: boolean;
+  isOnline?: boolean;
 }
 
 const CUISINES = [
@@ -241,7 +243,9 @@ function RestaurantListingContent() {
             distance: parseFloat(data.distance || (1.5 + Math.random() * 3).toFixed(1)),
             costForOne: data.minOrder || 200,
             emoji: data.logo || "🍽️",
-            promo: data.promo || ""
+            promo: data.promo || "",
+            isOpen: data.isOpen !== undefined ? data.isOpen : true,
+            isOnline: data.isOnline !== undefined ? data.isOnline : true
           };
         });
         const mapped = await Promise.all(restaurantPromises);
@@ -267,7 +271,7 @@ function RestaurantListingContent() {
     // Add mock if they don't exist in firestore list
     RESTAURANTS.forEach(mockR => {
       if (!combined.some(r => r.id === mockR.id)) {
-        combined.push(mockR);
+        combined.push({ ...mockR, isOpen: true, isOnline: true } as any);
       }
     });
 
@@ -431,6 +435,10 @@ function RestaurantListingContent() {
                 key={restaurant.id} 
                 className={styles.restaurantCard}
                 onClick={() => {
+                  if (restaurant.isOpen === false || restaurant.isOnline === false) {
+                    alert("This restaurant is currently closed or offline and not accepting orders.");
+                    return;
+                  }
                   const url = searchQuery
                     ? `/restaurant?id=${restaurant.id}&search=${encodeURIComponent(searchQuery)}`
                     : `/restaurant?id=${restaurant.id}`;
@@ -438,6 +446,7 @@ function RestaurantListingContent() {
                 }}
                 role="button"
                 tabIndex={0}
+                style={{ opacity: (restaurant.isOpen === false || restaurant.isOnline === false) ? 0.6 : 1, cursor: (restaurant.isOpen === false || restaurant.isOnline === false) ? "not-allowed" : "pointer" }}
               >
                 {/* Left side: Styled Image container */}
                 <div className={styles.imageWrap}>

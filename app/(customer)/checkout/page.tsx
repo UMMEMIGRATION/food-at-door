@@ -160,6 +160,10 @@ export default function CheckoutPage() {
       const restSnap = await getDoc(restRef);
       if (restSnap.exists()) {
         const restData = restSnap.data();
+        if (restData.isOpen === false || restData.isOnline === false) {
+          alert("This restaurant is currently closed or offline and cannot accept new orders.");
+          return;
+        }
         if (restData.name) restaurantName = restData.name;
         
         // Extract address string

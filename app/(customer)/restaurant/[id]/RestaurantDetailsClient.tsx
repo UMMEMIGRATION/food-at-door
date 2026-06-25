@@ -172,6 +172,8 @@ interface RestaurantDetails {
   emoji: string;
   categoriesList: string[];
   menuItems: MenuItem[];
+  isOpen?: boolean;
+  isOnline?: boolean;
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Page Component
@@ -250,7 +252,9 @@ export default function RestaurantDetailsPage({ params }: { params: { id: string
               distance: `${data.distance || 2.0} km`,
               emoji: data.logo || "🍽️",
               categoriesList: catsList,
-              menuItems: itemsList
+              menuItems: itemsList,
+              isOpen: data.isOpen !== undefined ? data.isOpen : true,
+              isOnline: data.isOnline !== undefined ? data.isOnline : true
             });
           }
         } else {
@@ -281,7 +285,9 @@ export default function RestaurantDetailsPage({ params }: { params: { id: string
       distance: "",
       emoji: "",
       categoriesList: [],
-      menuItems: []
+      menuItems: [],
+      isOpen: true,
+      isOnline: true
     };
   }, [dbRestaurant]);
 
@@ -448,7 +454,9 @@ export default function RestaurantDetailsPage({ params }: { params: { id: string
         distance: `${mockInfo.distance} km`,
         emoji: mockInfo.emoji,
         categoriesList: catsList,
-        menuItems: itemsList
+        menuItems: itemsList,
+        isOpen: true,
+        isOnline: true
       });
       return null;
     }
@@ -544,6 +552,12 @@ export default function RestaurantDetailsPage({ params }: { params: { id: string
           <p className={styles.description}>{restaurant.description}</p>
         </section>
 
+        {(restaurant.isOpen === false || restaurant.isOnline === false) && (
+          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '12px 16px', borderRadius: '12px', margin: '0 16px 16px 16px', fontWeight: 'bold', fontSize: '13px', textAlign: 'center' }}>
+            ⚠️ This restaurant is currently offline/closed and not accepting new orders.
+          </div>
+        )}
+
         {/* ── Category scroll tags ────────────────────────────────────────────── */}
         {activeCategories.length > 0 && (
           <nav className={styles.categoriesSection} aria-label="Menu Categories">
@@ -613,7 +627,15 @@ export default function RestaurantDetailsPage({ params }: { params: { id: string
                         
                         {/* Quantity Selector overlay */}
                         <div className={styles.addBtnContainer}>
-                          {qty > 0 ? (
+                          {(restaurant.isOpen === false || restaurant.isOnline === false) ? (
+                            <button 
+                              disabled 
+                              className={styles.addBtn}
+                              style={{ background: '#374151', color: '#9CA3AF', cursor: 'not-allowed' }}
+                            >
+                              CLOSED
+                            </button>
+                          ) : qty > 0 ? (
                             <div className={styles.qtySelector}>
                               <button 
                                 onClick={() => handleRemoveFromCart(item.id)}

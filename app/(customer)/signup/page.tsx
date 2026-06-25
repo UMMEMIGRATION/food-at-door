@@ -89,7 +89,9 @@ export default function SignUpPage() {
         {/* Brand header */}
         <div className={styles.brand}>
           <div className={styles.logoRing} aria-hidden="true">
-            🍽️
+            <div className={styles.logoBadge}>
+              🍽️
+            </div>
           </div>
           <h1 className={styles.brandName}>Food At Door</h1>
           <p className={styles.brandTagline}>
