@@ -1,0 +1,27 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "routes": [
+    { "src": "/login", "dest": "/login.html" },
+    { "src": "/signup", "dest": "/signup.html" },
+    { "src": "/forgot-password", "dest": "/forgot-password.html" },
+    { "src": "/checkout", "dest": "/checkout.html" },
+    { "src": "/orders", "dest": "/orders.html" },
+    { "src": "/orders/track", "dest": "/orders/track.html" },
+    { "src": "/profile", "dest": "/profile.html" },
+    { "src": "/profile/addresses", "dest": "/profile/addresses.html" },
+    { "src": "/profile/payment-methods", "dest": "/profile/payment-methods.html" },
+    { "src": "/wallet", "dest": "/wallet.html" },
+    { "src": "/cart", "dest": "/cart.html" },
+    { "src": "/coupons", "dest": "/coupons.html" },
+    { "src": "/favorites", "dest": "/favorites.html" },
+    { "src": "/notifications", "dest": "/notifications.html" },
+    { "src": "/offers", "dest": "/offers.html" },
+    { "src": "/payments", "dest": "/payments.html" },
+    { "src": "/settings", "dest": "/settings.html" },
+    { "src": "/restaurant", "dest": "/restaurant.html" },
+    { "src": "/restaurant/(?<id>[^/]+)", "dest": "/restaurant/[id].html" },
+    { "src": "/orders/(?<id>[^/]+)", "dest": "/orders/[id].html" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
